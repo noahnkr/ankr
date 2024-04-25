@@ -1,17 +1,7 @@
-var actual = 5;
-var guesses = 3;
-
-while (guesses > 0) {
-  var guess = input();
-
-  if (actual == guess) {
-    print("You win!");
-    break;
-  } else if (actual > guess) {
-    print("Too Low!");
-  } else {
-    print("Too High!");
-  }
+while (true || false) {
+  var x = 5;
 }
 
-
+while (false && false) {
+  var y *= 15;
+}

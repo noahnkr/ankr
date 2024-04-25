@@ -1,15 +1,28 @@
 #include "../include/token.h"
 #include <vector>
+#include <algorithm>
 
 bool is_operator(TokenType type) {
-  std::vector<TokenType> operators = {ADD,    SUBTRACT, MULTIPLY, DIVIDE,
-                                      MODULO, AND,      OR,       NOT};
+  std::vector<TokenType> operators = {ADD,
+                                      SUBTRACT,
+                                      MULTIPLY,
+                                      DIVIDE,
+                                      MODULO,
+                                      ASSIGN,
+                                      ASSIGN_ADD,
+                                      ASSIGN_SUBTRACT,
+                                      ASSIGN_MULTIPLY,
+                                      ASSIGN_DIVIDE,
+                                      ASSIGN_MODULO,
+                                      AND,
+                                      OR,
+                                      NOT};
 
   return std::find(operators.begin(), operators.end(), type) != operators.end();
 }
 
 bool is_operand(TokenType type) {
-  std::vector<TokenType> operands = {IDENTIFIER, INT, FLOAT, TRUE, FALSE};
+  std::vector<TokenType> operands = {IDENTIFIER, INT, FLOAT, STRING, TRUE, FALSE};
 
   return std::find(operands.begin(), operands.end(), type) != operands.end();
 }
@@ -35,13 +48,6 @@ int precedence(TokenType type) {
   case AND:
   case OR:
     return 5;
-  case ASSIGN:
-  case ASSIGN_ADD:
-  case ASSIGN_SUBTRACT:
-  case ASSIGN_MULTIPLY:
-  case ASSIGN_DIVIDE:
-  case ASSIGN_MODULO:
-    return 6;
   default:
     return -1;
   }

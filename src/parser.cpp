@@ -2,22 +2,15 @@
 #include <stack>
 #include <stdexcept>
 #include <vector>
+#include <iostream>
 
 Parser::Parser(std::vector<Token> tokens) : tokens(tokens), pos(0) {}
-
-bool Parser::match(TokenType expected) {
-  if (at_end())
-    return false;
-  if (tokens[pos].type == expected) {
-    pos++;
-    return true;
-  }
-  return false;
-}
+Parser::~Parser() {}
 
 Token Parser::peek() {
-  if (at_end())
+  if (at_end()) {
     return {END_FILE, ""};
+  }
   return tokens[pos];
 }
 
@@ -33,16 +26,7 @@ void Parser::consume(TokenType expected, std::string message) {
     return;
   }
 
-  throw std::runtime_error(message); // technically a compile-time error.
-}
-
-Node *Parser::parse_block() {
-  if (match(IF))
-    return parse_if();
-  if (match(WHILE))
-    return parse_while();
-  if (match(FOR))
-    return parse_for();
+  throw std::runtime_error(message); //TODO: Add handling and output for errors.
 }
 
 Node *Parser::parse_expression() {
@@ -54,12 +38,19 @@ Node *Parser::parse_expression() {
   while (!(at_end() || peek().type == END_STATEMENT ||
            (peek().type == RIGHT_PARENTHESIS && parenthesis_index == 0))) {
     Token t = advance();
-    if (t.type == LEFT_PARENTHESIS)
+
+    if (t.type == LEFT_PARENTHESIS) {
       parenthesis_index++;
-    else if (t.type == RIGHT_PARENTHESIS)
+    } else if (t.type == RIGHT_PARENTHESIS) {
       parenthesis_index--;
+    }
 
     infix.push_back(t);
+  }
+
+  // Skip semicolon
+  if (peek().type == END_STATEMENT) {
+    advance();
   }
 
   // Convert tokens to postfix
@@ -97,9 +88,15 @@ std::vector<Token> Parser::to_postfix(std::vector<Token> infix) {
   std::vector<Token> postfix;
   std::stack<Token> stack;
 
-  for (Token t : infix) {
+  for (size_t i = 0; i < infix.size(); i++) {
+    Token t = infix[i];
     if (is_operand(t.type)) {
-      postfix.push_back(t);
+      // Function call
+      if (i + 1 < infix.size() && infix[i + 1].type == LEFT_PARENTHESIS) {
+      // Operand
+      } else {
+        postfix.push_back(t);
+      }
     } else if (t.type == LEFT_PARENTHESIS) {
       stack.push(t);
     } else if (t.type == RIGHT_PARENTHESIS) {
@@ -128,22 +125,85 @@ std::vector<Token> Parser::to_postfix(std::vector<Token> infix) {
 }
 
 Node *Parser::parse_if() {
-  consume(LEFT_PARENTHESIS, "Expect '(' after 'if'.");
+  consume(IF, "Expected 'if'");
+  consume(LEFT_PARENTHESIS, "Expected '(' after 'if'");
   Node *condition = parse_expression();
-  consume(RIGHT_PARENTHESIS, "Expect ')' after  'if' condition.");
-  consume(LEFT_BRACKET, "Expected '{' after condition");
-  Node *if_body = parse_block();
-  consume(RIGHT_BRACKET, "Expected '}' after if body");
+  consume(RIGHT_PARENTHESIS, "Expected ')' after 'if' condition");
+  Node *true_body = parse_block();
+  Node *false_body = nullptr;
+
+  // Check for 'else if' or 'else'
+  if (peek().type == ELSE) {
+    advance();
+    if (peek().type == IF) {
+      false_body = parse_if(); // Recursively parse nesed if statements
+    } else {
+      false_body = parse_block();
+    }
+  }
+
+  return new IfNode(condition, true_body, false_body);
+}
+
+Node *Parser::parse_while() {
+  consume(WHILE, "Expected 'while'");
+  consume(LEFT_PARENTHESIS, "Expected '(' after 'while'");
+  Node *condition = parse_expression();
+  consume(RIGHT_PARENTHESIS, "Expected ')' after 'while' condition");
+  Node* body = parse_block();
+  return new WhileNode(condition, body);
+}
+
+Node *Parser::parse_variable() {
+  consume(VAR, "Expected 'var' declaration");
+  Node *initializer = parse_expression();
+  return new VariableNode(initializer);
+}
+
+Node *Parser::parse_function() {
+  return nullptr;
+}
+
+Node *Parser::parse_for() {
+  return nullptr;
+}
+
+Node *Parser::parse_block() {
+  std::cout << "Parsing: Block" << std::endl;
+  std::vector<Node *> statements;
+
+  consume(LEFT_BRACKET, "Expected '{' at start of block");
+
+  while (!(at_end() || peek().type == RIGHT_BRACKET)) {
+    statements.push_back(parse_statement());
+  }
+
+  consume(RIGHT_BRACKET, "Expected '}' at end of block");
+
+  return new BlockNode(statements);
+}
+
+
+Node *Parser::parse_statement() {
+  std::cout << "Parsing Statement:" << peek().value << std::endl;
+  switch (peek().type) {
+    case IF: return parse_if();
+    case WHILE: return parse_while();
+    case FOR: return parse_for();
+    case VAR: return parse_variable();
+    case FUNCTION: return parse_function();
+    default: return parse_expression();
+  }
 }
 
 Node *Parser::parse() {
   std::vector<Node *> root_statements;
 
   while (!at_end()) {
-    root_statements.push_back(parse_block());
+    root_statements.push_back(parse_statement());
   }
 
   return new BlockNode(root_statements);
 }
 
-bool Parser::at_end() { return pos >= tokens.size(); }
+bool Parser::at_end() { return pos >= static_cast<int>(tokens.size()); }

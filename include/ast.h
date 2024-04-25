@@ -19,6 +19,12 @@ struct BlockNode : Node {
   }
 };
 
+struct VariableNode : Node {
+  Node *initializer;
+  VariableNode(Node *initializer) : initializer(initializer) {}
+  ~VariableNode() {}
+};
+
 struct TerminalNode : Node {
   Token token;
   TerminalNode(Token token) : token(token) {}
@@ -46,14 +52,14 @@ struct BinaryNode : Node {
 
 struct IfNode : Node {
   Node *condition;
-  Node *if_body;
-  Node *else_body;
-  IfNode(Node *condition, Node *if_body, Node *else_body)
-      : condition(condition), if_body(if_body), else_body(else_body) {}
+  Node *true_body;
+  Node *false_body;
+  IfNode(Node *condition, Node *true_body, Node *false_body)
+      : condition(condition), true_body(true_body), false_body(false_body) {}
   ~IfNode() {
     delete condition;
-    delete if_body;
-    delete else_body;
+    delete true_body;
+    delete false_body;
   }
 };
 

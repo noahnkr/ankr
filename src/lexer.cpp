@@ -4,7 +4,7 @@
 #include <string>
 #include <vector>
 
-Lexer::Lexer(std::string code) : code(code), pos(0), current_char(code[0]) {}
+Lexer::Lexer(std::string code) : code(code), pos(), current_char(code[0]) {}
 
 void Lexer::advance() {
   pos++;
@@ -32,7 +32,7 @@ Token Lexer::consume_number() {
     num += current_char;
     advance();
   }
-  std::cout << "Number: " << num << std::endl;
+  //std::cout << "Number: " << num << std::endl;
   return {type, num};
 }
 
@@ -44,7 +44,7 @@ Token Lexer::consume_string() {
     advance();
   }
   advance(); // Skip closing quote
-  std::cout << "String: " << str << std::endl;
+  //std::cout << "String: " << str << std::endl;
   return {STRING, str};
 }
 
@@ -52,7 +52,7 @@ std::vector<Token> Lexer::tokenize() {
   std::vector<Token> tokens;
   while (current_char != EOF) {
     if (current_char != ' ' && current_char != '\n') {
-      std::cout << "Current Char: " << current_char << ", ";
+      //std::cout << "Current Char: " << current_char << ", ";
     }
     // Space
     if (std::isspace(current_char)) {
@@ -77,7 +77,7 @@ std::vector<Token> Lexer::tokenize() {
         value += '=';
         advance();
       }
-      std::cout << "Token: " << value << std::endl;
+      //std::cout << "Token: " << value << std::endl;
       tokens.push_back(token_map.at(value));
       advance();
 
@@ -98,12 +98,12 @@ std::vector<Token> Lexer::tokenize() {
 
       // Token found
       if (token_map.find(value) != token_map.end()) {
-        std::cout << "Token: " << value << std::endl;
+        //std::cout << "Token: " << value << std::endl;
         tokens.push_back(token_map.at(value));
 
         // Otherwise, must be an identifier
       } else {
-        std::cout << "Identifier: " << value << std::endl;
+        //std::cout << "Identifier: " << value << std::endl;
         tokens.push_back({IDENTIFIER, value});
       }
     }
