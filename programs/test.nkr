@@ -1,7 +1,1 @@
-while (true || false) {
-  var x = 5;
-}
-
-while (false && false) {
-  var y *= 15;
-}
+var x = !(true || false);

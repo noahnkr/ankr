@@ -55,6 +55,11 @@ Node *Parser::parse_expression() {
 
   // Convert tokens to postfix
   std::vector<Token> postfix = to_postfix(infix);
+  std::cout << "Postfix: ";
+  for (Token t : postfix) {
+    std::cout << t.value << " ";
+  }
+  std::cout << std::endl;
 
   // Build Expression Tree
   std::stack<Node *> stack;
@@ -63,20 +68,22 @@ Node *Parser::parse_expression() {
       stack.push(new TerminalNode(t));
     } else if (is_operator(t.type)) {
       // Unary Operators
-      if (t.type == NOT /*|| t.type == NEGATIVE*/) {
-        stack.push(new UnaryNode(t, stack.top()));
+      if (t.type == NOT || t.type == NEGATIVE) {
+        Node *operand = stack.top();
         stack.pop();
-        continue;
-      }
+        stack.push(new UnaryNode(t, operand));
 
-      // Binary Operators
-      Node *right = stack.top();
-      stack.pop();
-      Node *left = stack.top();
-      stack.pop();
-      stack.push(new BinaryNode(t, left, right));
+        // Binary Operators
+      } else {
+        Node *right = stack.top();
+        stack.pop();
+        Node *left = stack.top();
+        stack.pop();
+        stack.push(new BinaryNode(t, left, right));
+      }
     }
   }
+
 
   // Root node is last element in stack
   Node *root = stack.top();
@@ -185,7 +192,7 @@ Node *Parser::parse_block() {
 
 
 Node *Parser::parse_statement() {
-  std::cout << "Parsing Statement:" << peek().value << std::endl;
+  std::cout << "Parsing Statement: " << peek().value << std::endl;
   switch (peek().type) {
     case IF: return parse_if();
     case WHILE: return parse_while();

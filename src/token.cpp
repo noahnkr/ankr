@@ -1,53 +1,59 @@
 #include "../include/token.h"
-#include <vector>
 #include <algorithm>
+#include <unordered_set>
 
 bool is_operator(TokenType type) {
-  std::vector<TokenType> operators = {ADD,
-                                      SUBTRACT,
-                                      MULTIPLY,
-                                      DIVIDE,
-                                      MODULO,
-                                      ASSIGN,
-                                      ASSIGN_ADD,
-                                      ASSIGN_SUBTRACT,
-                                      ASSIGN_MULTIPLY,
-                                      ASSIGN_DIVIDE,
-                                      ASSIGN_MODULO,
-                                      AND,
-                                      OR,
-                                      NOT};
+  std::unordered_set<TokenType> operators = {
+      ADD,
+      SUBTRACT,
+      MULTIPLY,
+      DIVIDE,
+      MODULO,
+      AND,
+      OR,
+      NOT,
+      NEGATIVE,
+      ASSIGN,
+      ASSIGN_ADD,
+      ASSIGN_SUBTRACT,
+      ASSIGN_MULTIPLY,
+      ASSIGN_DIVIDE,
+      ASSIGN_MODULO,
+  };
 
-  return std::find(operators.begin(), operators.end(), type) != operators.end();
+  return operators.count(type) > 0;
 }
 
 bool is_operand(TokenType type) {
-  std::vector<TokenType> operands = {IDENTIFIER, INT, FLOAT, STRING, TRUE, FALSE};
+  std::unordered_set<TokenType> operands = {IDENTIFIER, INT, FLOAT, STRING, TRUE, FALSE};
 
-  return std::find(operands.begin(), operands.end(), type) != operands.end();
+  return operands.count(type) > 0;
 }
 
 int precedence(TokenType type) {
   switch (type) {
   case ADD:
   case SUBTRACT:
-  case NOT:
     return 1;
   case MULTIPLY:
   case DIVIDE:
   case MODULO:
     return 2;
+  case NOT:
+  case NEGATIVE:
+    return 3;
   case LESS_THAN:
   case GREATER_THAN:
   case LESS_THAN_OR_EQUAL:
   case GREATER_THAN_OR_EQUAL:
-    return 3;
+    return 4;
   case EQUAL:
   case NOT_EQUAL:
-    return 4;
-  case AND:
-  case OR:
     return 5;
+  case AND:
+    return 6;
+  case OR:
+    return 7;
   default:
     return -1;
   }
@@ -71,6 +77,7 @@ std::map<std::string, Token> token_map = {
     {"*", {MULTIPLY, "*"}},
     {"/", {DIVIDE, "/"}},
     {"%", {MODULO, "%"}},
+    {"-", {NEGATIVE, "-"}},
     {"(", {LEFT_PARENTHESIS, "("}},
     {")", {RIGHT_PARENTHESIS, ")"}},
     {"{", {LEFT_BRACKET, "{"}},

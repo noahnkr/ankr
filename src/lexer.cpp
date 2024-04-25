@@ -25,7 +25,7 @@ void Lexer::consume_whitespace() {
 Token Lexer::consume_number() {
   std::string num;
   TokenType type = INT;
-  while (std::isdigit(current_char) || current_char == '.') {
+  while (std::isdigit(current_char) || current_char == '.' || current_char == '-') {
     if (current_char == '.') {
       type = FLOAT;
     }
@@ -59,20 +59,22 @@ std::vector<Token> Lexer::tokenize() {
       consume_whitespace();
 
       // Integer / Float
-    } else if (std::isdigit(current_char)) {
+    } else if (std::isdigit(current_char) || (current_char == '-' && std::isdigit(peek()))) {
       tokens.push_back(consume_number());
 
       // String
     } else if (current_char == '\"') {
       tokens.push_back(consume_string());
 
-      // Equality Operators
+      // Operators
     } else if (current_char == '>' || current_char == '<' ||
                current_char == '=' || current_char == '!' ||
                current_char == '+' || current_char == '-' ||
                current_char == '*' || current_char == '/') {
       std::string value;
       value += current_char;
+
+      // Equality Operators
       if (peek() == '=') {
         value += '=';
         advance();
