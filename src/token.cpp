@@ -13,12 +13,21 @@ bool is_operator(TokenType type) {
       OR,
       NOT,
       NEGATIVE,
+      INCREMENT,
+      DECREMENT,
+      RETURN,
       ASSIGN,
       ASSIGN_ADD,
       ASSIGN_SUBTRACT,
       ASSIGN_MULTIPLY,
       ASSIGN_DIVIDE,
       ASSIGN_MODULO,
+      EQUAL,
+      NOT_EQUAL,
+      LESS_THAN,
+      LESS_THAN_OR_EQUAL,
+      GREATER_THAN,
+      GREATER_THAN_OR_EQUAL,
   };
 
   return operators.count(type) > 0;
@@ -29,6 +38,13 @@ bool is_operand(TokenType type) {
 
   return operands.count(type) > 0;
 }
+
+bool is_unary(TokenType type) {
+  std::unordered_set<TokenType> unary_operators = {NOT, NEGATIVE, INCREMENT, DECREMENT, RETURN};
+
+  return unary_operators.count(type) > 0;
+}
+
 
 int precedence(TokenType type) {
   switch (type) {
@@ -41,6 +57,9 @@ int precedence(TokenType type) {
     return 2;
   case NOT:
   case NEGATIVE:
+  case INCREMENT:
+  case DECREMENT:
+  case RETURN:
     return 3;
   case LESS_THAN:
   case GREATER_THAN:
@@ -78,6 +97,8 @@ std::map<std::string, Token> token_map = {
     {"/", {DIVIDE, "/"}},
     {"%", {MODULO, "%"}},
     {"-", {NEGATIVE, "-"}},
+    {"++", {INCREMENT, "++"}},
+    {"--", {DECREMENT, "--"}},
     {"(", {LEFT_PARENTHESIS, "("}},
     {")", {RIGHT_PARENTHESIS, ")"}},
     {"{", {LEFT_BRACKET, "{"}},

@@ -22,6 +22,8 @@ private:
 
   FunctionNode *parse_function(bool definition);
 
+  UnaryNode *parse_return();
+
   Node *parse_expression();
 
   Node *parse_statement();

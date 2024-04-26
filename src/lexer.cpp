@@ -1,6 +1,7 @@
 #include "../include/lexer.h"
 #include <cctype>
 #include <iostream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -78,35 +79,50 @@ std::vector<Token> Lexer::tokenize() {
       if (peek() == '=') {
         value += '=';
         advance();
+      } else if (current_char == '-' && peek() == '-') {
+        value += '-';
+        advance();
+      } else if (current_char == '+' && peek() == '+') {
+        value += '+';
+        advance();
       }
+
       //std::cout << "Token: " << value << std::endl;
       tokens.push_back(token_map.at(value));
       advance();
 
-    } else if (current_char == '!') {
-      tokens.push_back({NOT, "!"});
-      advance();
+    } else if (std::isalpha(current_char)) {
+      std::string value;
+      do {
+        value += current_char;
+        advance();
+      }
+      while (token_map.find(value) == token_map.end() && 
+              !(std::isspace(current_char) || current_char == ';' ||
+              current_char == '(' || current_char == ')' ||
+              current_char == ',' || current_char == '+' ||
+              current_char == '-'));
+      
+      // Keyword
+      if (token_map.find(value) != token_map.end()) {
+        tokens.push_back(token_map.at(value));
+      } else {
+        tokens.push_back({IDENTIFIER, value});
+      }
 
     } else {
       std::string value;
       do {
         value += current_char;
         advance();
-
-      } while (token_map.find(value) == token_map.end() &&
-               !std::isspace(current_char) && current_char != ';' &&
-               current_char != ',' && current_char != '(' &&
-               current_char != ')' && current_char != EOF);
+      } while (token_map.find(value) == token_map.end() && current_char != EOF);
 
       // Token found
       if (token_map.find(value) != token_map.end()) {
         //std::cout << "Token: " << value << std::endl;
         tokens.push_back(token_map.at(value));
-
-        // Otherwise, must be an identifier
       } else {
-        //std::cout << "Identifier: " << value << std::endl;
-        tokens.push_back({IDENTIFIER, value});
+        throw std::runtime_error("Unknown Token");
       }
     }
   }

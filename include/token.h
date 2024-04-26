@@ -27,6 +27,8 @@ enum TokenType {
   DIVIDE,
   MODULO,
   NEGATIVE,
+  INCREMENT,
+  DECREMENT,
   LEFT_PARENTHESIS,
   RIGHT_PARENTHESIS,
   LEFT_BRACKET,
@@ -65,6 +67,8 @@ struct Token {
 extern bool is_operator(TokenType type);
 
 extern bool is_operand(TokenType type);
+
+extern bool is_unary(TokenType type);
 
 extern int precedence(TokenType type);
 

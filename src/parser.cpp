@@ -58,22 +58,33 @@ Node *Parser::parse_expression() {
     advance();
   }
 
+  /*std::cout << "Infix: ";
+  for (Token t : infix) {
+    std::cout << t.value << " ";
+  }
+  std::cout << std::endl;*/
+
   // Convert tokens to postfix
   std::vector<Token> postfix = to_postfix(infix);
+
+  /*std::cout << "Postfix: ";
+  for (Token t : postfix) {
+    std::cout << t.value << " ";
+  }
+  std::cout << std::endl;*/
 
   // Build Expression Tree
   std::stack<Node *> stack;
   for (Token t : postfix) {
     if (is_operand(t.type)) {
       stack.push(new TerminalNode(t));
+      
     } else if (is_operator(t.type)) {
-      // Unary Operators
-      if (t.type == NOT || t.type == NEGATIVE) {
+      if (is_unary(t.type)) {
         Node *operand = stack.top();
         stack.pop();
         stack.push(new UnaryNode(t, operand));
 
-        // Binary Operators
       } else {
         Node *right = stack.top();
         stack.pop();
@@ -81,6 +92,7 @@ Node *Parser::parse_expression() {
         stack.pop();
         stack.push(new BinaryNode(t, left, right));
       }
+
     } else if (t.type == FUNCTION) {
       for (FunctionNode *n : function_calls) {
         if (n->identifier.value == t.value) {
@@ -90,6 +102,10 @@ Node *Parser::parse_expression() {
     }
   }
 
+
+  if (stack.empty()) {
+    return nullptr;
+  }
 
   // Root node is last element in stack
   Node *root = stack.top();
@@ -196,9 +212,12 @@ FunctionNode *Parser::parse_function(bool definition) {
     body = parse_block();
   }
 
-
-  std::cout << "Parsed Function!" << std::endl;
   return new FunctionNode(identifier, parameters, body);
+}
+
+UnaryNode *Parser::parse_return() {
+  consume(RETURN, "Expected 'return'");
+  return new UnaryNode({RETURN, "return"}, parse_expression());
 }
 
 ForNode *Parser::parse_for() {
@@ -215,7 +234,6 @@ ForNode *Parser::parse_for() {
 }
 
 BlockNode *Parser::parse_block() {
-  std::cout << "Parsing: Block" << std::endl;
   std::vector<Node *> statements;
 
   consume(LEFT_BRACKET, "Expected '{' at start of block");
@@ -229,15 +247,14 @@ BlockNode *Parser::parse_block() {
   return new BlockNode(statements);
 }
 
-
 Node *Parser::parse_statement() {
-  std::cout << "Parsing Statement: " << peek().value << std::endl;
   switch (peek().type) {
     case IF: return parse_if();
     case WHILE: return parse_while();
     case FOR: return parse_for();
     case VAR: return parse_variable();
     case FUNCTION: return parse_function(true);
+    case RETURN: return parse_return();
     default: return parse_expression();
   }
 }

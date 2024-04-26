@@ -1,3 +1,15 @@
-for (var i = 0; i < 1; i += 1) {
-  var j = 5;
+int val = 1;
+
+function foo(val) {
+  return val;
+}
+
+while (true) {
+  if (val == 0) {
+    foo("Hello!");
+  } else if (val == 1) {
+    bar(val + 2);
+  } else if (val == 2) {
+    fur((val / 3) + 1);
+  }
 }
