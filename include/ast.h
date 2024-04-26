@@ -25,6 +25,20 @@ struct VariableNode : Node {
   ~VariableNode() {}
 };
 
+struct FunctionNode : Node {
+  Token identifier;
+  std::vector<Node *> parameters;
+  BlockNode *body;
+  FunctionNode(Token identifier, std::vector<Node *> parameters, BlockNode *body)
+      : identifier(identifier), parameters(parameters), body(body) {}
+  ~FunctionNode() { 
+    for (Node *n : parameters) {
+      delete n;
+    }
+    delete body; 
+  }
+};
+
 struct TerminalNode : Node {
   Token token;
   TerminalNode(Token token) : token(token) {}
@@ -53,7 +67,7 @@ struct BinaryNode : Node {
 struct IfNode : Node {
   Node *condition;
   Node *true_body;
-  Node *false_body;
+  Node *false_body; // Used to chain if statements
   IfNode(Node *condition, Node *true_body, Node *false_body)
       : condition(condition), true_body(true_body), false_body(false_body) {}
   ~IfNode() {
@@ -65,8 +79,8 @@ struct IfNode : Node {
 
 struct WhileNode : Node {
   Node *condition;
-  Node *body;
-  WhileNode(Node *condition, Node *body) : condition(condition), body(body) {}
+  BlockNode *body;
+  WhileNode(Node *condition, BlockNode *body) : condition(condition), body(body) {}
   ~WhileNode() {
     delete condition;
     delete body;
@@ -77,8 +91,8 @@ struct ForNode : Node {
   Node *initialization;
   Node *condition;
   Node *update;
-  Node *body;
-  ForNode(Node *initialization, Node *condition, Node *update, Node *body)
+  BlockNode *body;
+  ForNode(Node *initialization, Node *condition, Node *update, BlockNode *body)
       : initialization(initialization), condition(condition), update(update),
         body(body) {}
   ~ForNode() {

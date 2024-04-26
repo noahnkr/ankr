@@ -1,6 +1,5 @@
 #include "../include/parser.h"
 #include <stack>
-#include <stdexcept>
 #include <vector>
 #include <iostream>
 
@@ -26,40 +25,41 @@ void Parser::consume(TokenType expected, std::string message) {
     return;
   }
 
-  throw std::runtime_error(message); //TODO: Add handling and output for errors.
+  throw std::runtime_error(message);
 }
 
 Node *Parser::parse_expression() {
   int parenthesis_index = 0;
   std::vector<Token> infix;
+  std::vector<FunctionNode *> function_calls;
 
-  // Keep reading tokens until we reach a semicolon or the wrapping right
-  // parenthesis.
-  while (!(at_end() || peek().type == END_STATEMENT ||
+  // Keep reading tokens until we reach a semicolon/comma or the wrapping parenthesis.
+  while (!(at_end() || peek().type == END_STATEMENT || peek().type == COMMA ||
            (peek().type == RIGHT_PARENTHESIS && parenthesis_index == 0))) {
     Token t = advance();
-
     if (t.type == LEFT_PARENTHESIS) {
       parenthesis_index++;
     } else if (t.type == RIGHT_PARENTHESIS) {
       parenthesis_index--;
     }
 
-    infix.push_back(t);
+    if (t.type == IDENTIFIER && peek().type == LEFT_PARENTHESIS) {
+      FunctionNode *function_root = parse_function(false);
+      function_root->identifier = t;
+      function_calls.push_back(function_root);
+      infix.push_back({FUNCTION, t.value});
+    } else {
+      infix.push_back(t);
+    }
   }
 
-  // Skip semicolon
-  if (peek().type == END_STATEMENT) {
+  // Skip semicolon/comma
+  if (peek().type == END_STATEMENT || peek().type == COMMA) {
     advance();
   }
 
   // Convert tokens to postfix
   std::vector<Token> postfix = to_postfix(infix);
-  std::cout << "Postfix: ";
-  for (Token t : postfix) {
-    std::cout << t.value << " ";
-  }
-  std::cout << std::endl;
 
   // Build Expression Tree
   std::stack<Node *> stack;
@@ -81,6 +81,12 @@ Node *Parser::parse_expression() {
         stack.pop();
         stack.push(new BinaryNode(t, left, right));
       }
+    } else if (t.type == FUNCTION) {
+      for (FunctionNode *n : function_calls) {
+        if (n->identifier.value == t.value) {
+          stack.push(n);
+        }
+      }
     }
   }
 
@@ -97,13 +103,8 @@ std::vector<Token> Parser::to_postfix(std::vector<Token> infix) {
 
   for (size_t i = 0; i < infix.size(); i++) {
     Token t = infix[i];
-    if (is_operand(t.type)) {
-      // Function call
-      if (i + 1 < infix.size() && infix[i + 1].type == LEFT_PARENTHESIS) {
-      // Operand
-      } else {
-        postfix.push_back(t);
-      }
+    if (is_operand(t.type) || t.type == FUNCTION) {
+      postfix.push_back(t);
     } else if (t.type == LEFT_PARENTHESIS) {
       stack.push(t);
     } else if (t.type == RIGHT_PARENTHESIS) {
@@ -131,7 +132,7 @@ std::vector<Token> Parser::to_postfix(std::vector<Token> infix) {
   return postfix;
 }
 
-Node *Parser::parse_if() {
+IfNode *Parser::parse_if() {
   consume(IF, "Expected 'if'");
   consume(LEFT_PARENTHESIS, "Expected '(' after 'if'");
   Node *condition = parse_expression();
@@ -152,30 +153,68 @@ Node *Parser::parse_if() {
   return new IfNode(condition, true_body, false_body);
 }
 
-Node *Parser::parse_while() {
+WhileNode *Parser::parse_while() {
   consume(WHILE, "Expected 'while'");
   consume(LEFT_PARENTHESIS, "Expected '(' after 'while'");
   Node *condition = parse_expression();
   consume(RIGHT_PARENTHESIS, "Expected ')' after 'while' condition");
-  Node* body = parse_block();
+  BlockNode* body = parse_block();
   return new WhileNode(condition, body);
 }
 
-Node *Parser::parse_variable() {
+VariableNode *Parser::parse_variable() {
   consume(VAR, "Expected 'var' declaration");
   Node *initializer = parse_expression();
   return new VariableNode(initializer);
 }
 
-Node *Parser::parse_function() {
-  return nullptr;
+FunctionNode *Parser::parse_function(bool definition) {
+  Token identifier;
+  if (definition) {
+    consume(FUNCTION, "Expected 'function' before identifier");
+    identifier = advance();
+  } else {
+    identifier = {IDENTIFIER, ""}; // Empty identifier for now, will be set after expression is parsed.
+  }
+
+  consume(LEFT_PARENTHESIS, "Expected '(' after identifier");
+  std::vector<Node *> parameters;
+
+  while (peek().type != RIGHT_PARENTHESIS) {
+    Node *parameter = parse_expression();
+
+    // Make sure function parameter is just an identifier on definition
+    if (definition && static_cast<TerminalNode *>(parameter)->token.type != IDENTIFIER)
+      throw std::runtime_error("Invalid function parameter");
+
+    parameters.push_back(parameter);
+  }
+  consume(RIGHT_PARENTHESIS, "Expected ')' after parameters");
+
+  BlockNode *body = nullptr;
+  if (definition) {
+    body = parse_block();
+  }
+
+
+  std::cout << "Parsed Function!" << std::endl;
+  return new FunctionNode(identifier, parameters, body);
 }
 
-Node *Parser::parse_for() {
-  return nullptr;
+ForNode *Parser::parse_for() {
+  consume(FOR, "Expected 'for'");
+  consume(LEFT_PARENTHESIS, "Expected '(' after 'for'");
+
+  Node *initialization = parse_statement();
+  Node *condition = parse_expression();
+  Node *update = parse_expression();
+
+  consume(RIGHT_PARENTHESIS, "Expected ')' after 'for' condition");
+  BlockNode *body = parse_block();
+  return new ForNode(initialization, condition, update, body);
 }
 
-Node *Parser::parse_block() {
+BlockNode *Parser::parse_block() {
   std::cout << "Parsing: Block" << std::endl;
   std::vector<Node *> statements;
 
@@ -198,7 +237,7 @@ Node *Parser::parse_statement() {
     case WHILE: return parse_while();
     case FOR: return parse_for();
     case VAR: return parse_variable();
-    case FUNCTION: return parse_function();
+    case FUNCTION: return parse_function(true);
     default: return parse_expression();
   }
 }
@@ -211,6 +250,62 @@ Node *Parser::parse() {
   }
 
   return new BlockNode(root_statements);
+}
+
+void Parser::traverse(Node *root) {
+  if (!root)
+    return;
+
+  std::stack<std::pair<Node *, int>> stack;
+  stack.push({root, 0});
+
+  while (!stack.empty()) {
+    auto [current, depth] = stack.top();
+    stack.pop();
+    std::string indent(depth * 2, ' ');
+
+    if (auto *bn = dynamic_cast<BlockNode *>(current)) {
+      for (auto it = bn->statements.rbegin(); it != bn->statements.rend();
+           it++) {
+        stack.push({*it, depth});
+      }
+    } else if (auto *vn = dynamic_cast<VariableNode *>(current)) {
+      std::cout << indent << "Variable" << std::endl;
+      stack.push({vn->initializer, depth + 1});
+    } else if (auto *tn = dynamic_cast<TerminalNode *>(current)) {
+      std::cout << indent << tn->token.value << std::endl;
+    } else if (auto *un = dynamic_cast<UnaryNode *>(current)) {
+      std::cout << indent << un->token.value << std::endl;
+      stack.push({un->child, depth + 1});
+    } else if (auto *bnn = dynamic_cast<BinaryNode *>(current)) {
+      std::cout << indent << bnn->token.value << std::endl;
+      stack.push({bnn->right, depth + 1});
+      stack.push({bnn->left, depth + 1});
+    } else if (auto *in = dynamic_cast<IfNode *>(current)) {
+      std::cout << indent << "If" << std::endl;
+      stack.push({in->false_body, depth + 1});
+      stack.push({in->true_body, depth + 1});
+      stack.push({in->condition, depth + 1});
+    } else if (auto *wn = dynamic_cast<WhileNode *>(current)) {
+      std::cout << indent << "While" << std::endl;
+      stack.push({wn->body, depth + 1});
+      stack.push({wn->condition, depth + 1});
+    } else if (auto *fn = dynamic_cast<ForNode *>(current)) {
+      std::cout << indent << "For" << std::endl;
+      stack.push({fn->body, depth + 1});
+      stack.push({fn->update, depth + 1});
+      stack.push({fn->condition, depth + 1});
+      stack.push({fn->initialization, depth + 1});
+    } else if (auto *fnn = dynamic_cast<FunctionNode *>(current)) {
+      std::cout << indent << fnn->identifier.value << "(" << std::endl;
+      for (Node *p : fnn->parameters) {
+        std::cout << indent << indent;
+        traverse(p);
+      }
+      std::cout << indent << ")" << std::endl;
+      stack.push({fnn->body, depth + 1});
+    } 
+  }
 }
 
 bool Parser::at_end() { return pos >= static_cast<int>(tokens.size()); }

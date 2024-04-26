@@ -95,8 +95,8 @@ std::vector<Token> Lexer::tokenize() {
 
       } while (token_map.find(value) == token_map.end() &&
                !std::isspace(current_char) && current_char != ';' &&
-               current_char != '(' && current_char != ')' &&
-               current_char != EOF);
+               current_char != ',' && current_char != '(' &&
+               current_char != ')' && current_char != EOF);
 
       // Token found
       if (token_map.find(value) != token_map.end()) {

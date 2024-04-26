@@ -10,17 +10,17 @@ private:
   std::vector<Token> tokens;
   int pos;
 
-  Node *parse_block();
+  BlockNode *parse_block();
 
-  Node *parse_if();
+  IfNode *parse_if();
 
-  Node *parse_while();
+  WhileNode *parse_while();
 
-  Node *parse_for();
+  ForNode *parse_for();
 
-  Node *parse_variable();
+  VariableNode *parse_variable();
 
-  Node *parse_function();
+  FunctionNode *parse_function(bool definition);
 
   Node *parse_expression();
 
@@ -41,6 +41,8 @@ public:
   ~Parser();
 
   Node *parse();
+
+  static void traverse(Node *root);
 };
 
 #endif // PARSER_H
