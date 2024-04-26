@@ -36,7 +36,7 @@ int main(int argc, char *argv[]) {
   Parser parser(tokens);
   Node *root = parser.parse();
   std::cout << "Parsed." << std::endl;
-  Parser::traverse(root);
+  std::cout << Parser::draw_tree(root);
   std::cout << "Traversed." << std::endl;
   // Interpreter interpreter;
   // interpreter.visit(root);

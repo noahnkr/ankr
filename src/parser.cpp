@@ -269,59 +269,134 @@ Node *Parser::parse() {
   return new BlockNode(root_statements);
 }
 
-void Parser::traverse(Node *root) {
-  if (!root)
+std::string Parser::draw_tree(Node *root) {
+  if (!root) {
+    return "";
+  }
+
+  std::string tree = "";
+  draw_tree_rec(root, tree, "", "", true);
+
+  return tree;
+}
+
+void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
+                           std::string pointer, bool has_right) {
+  if (!root) {
     return;
+  }
 
-  std::stack<std::pair<Node *, int>> stack;
-  stack.push({root, 0});
+  tree += "\n";
+  tree += padding;
+  tree += pointer;
 
-  while (!stack.empty()) {
-    auto [current, depth] = stack.top();
-    stack.pop();
-    std::string indent(depth * 2, ' ');
+  if (auto *bn = dynamic_cast<BlockNode *>(root)) {
+    tree += "[]"; // Code Block
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+    for (size_t i = 0; i < bn->statements.size(); i++) {
+      Node *statement = bn->statements[i];
+      std::string pointer = i + 1 < bn->statements.size() ? "├──" : "└──";
+      draw_tree_rec(statement, tree, padding_temp, pointer, i + 1 < bn->statements.size());
+    }
 
-    if (auto *bn = dynamic_cast<BlockNode *>(current)) {
-      for (auto it = bn->statements.rbegin(); it != bn->statements.rend();
-           it++) {
-        stack.push({*it, depth});
-      }
-    } else if (auto *vn = dynamic_cast<VariableNode *>(current)) {
-      std::cout << indent << "Variable" << std::endl;
-      stack.push({vn->initializer, depth + 1});
-    } else if (auto *tn = dynamic_cast<TerminalNode *>(current)) {
-      std::cout << indent << tn->token.value << std::endl;
-    } else if (auto *un = dynamic_cast<UnaryNode *>(current)) {
-      std::cout << indent << un->token.value << std::endl;
-      stack.push({un->child, depth + 1});
-    } else if (auto *bnn = dynamic_cast<BinaryNode *>(current)) {
-      std::cout << indent << bnn->token.value << std::endl;
-      stack.push({bnn->right, depth + 1});
-      stack.push({bnn->left, depth + 1});
-    } else if (auto *in = dynamic_cast<IfNode *>(current)) {
-      std::cout << indent << "If" << std::endl;
-      stack.push({in->false_body, depth + 1});
-      stack.push({in->true_body, depth + 1});
-      stack.push({in->condition, depth + 1});
-    } else if (auto *wn = dynamic_cast<WhileNode *>(current)) {
-      std::cout << indent << "While" << std::endl;
-      stack.push({wn->body, depth + 1});
-      stack.push({wn->condition, depth + 1});
-    } else if (auto *fn = dynamic_cast<ForNode *>(current)) {
-      std::cout << indent << "For" << std::endl;
-      stack.push({fn->body, depth + 1});
-      stack.push({fn->update, depth + 1});
-      stack.push({fn->condition, depth + 1});
-      stack.push({fn->initialization, depth + 1});
-    } else if (auto *fnn = dynamic_cast<FunctionNode *>(current)) {
-      std::cout << indent << fnn->identifier.value << "(" << std::endl;
-      for (Node *p : fnn->parameters) {
-        std::cout << indent << indent;
-        traverse(p);
-      }
-      std::cout << indent << ")" << std::endl;
-      stack.push({fnn->body, depth + 1});
-    } 
+  } else if (auto *vn = dynamic_cast<VariableNode *>(root)) {
+    tree += "Var";
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+    draw_tree_rec(vn->initializer, tree, padding_temp, "└──", false);
+
+  } else if (auto *tn = dynamic_cast<TerminalNode *>(root)) {
+    tree += tn->token.value;
+
+  } else if (auto *un = dynamic_cast<UnaryNode *>(root)) {
+    tree += un->token.value;
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+    draw_tree_rec(un->child, tree, padding_temp, "└──", false);
+
+  } else if (auto *bnn = dynamic_cast<BinaryNode *>(root)) {
+    tree += bnn->token.value;
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+
+    std::string pointer_right = "└──";
+    std::string pointer_left = bnn->right ? "├──" : "└──";
+
+    draw_tree_rec(bnn->left, tree, padding_temp, pointer_left, bnn->right);
+    draw_tree_rec(bnn->right, tree, padding_temp, pointer_right, false);
+  } else if (auto *in = dynamic_cast<IfNode *>(root)) {
+    tree += "If";
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+
+    std::string true_pointer = in->false_body ? "├──" : "└──";
+
+    draw_tree_rec(in->condition, tree, padding_temp, "├──", true);
+    draw_tree_rec(in->true_body, tree, padding_temp, true_pointer, in->false_body);
+
+    if (auto *false_body_node = dynamic_cast<IfNode *>(in->false_body)) {
+      std::string false_pointer =  false_body_node->false_body ? "├──" : "└──";
+      draw_tree_rec(in->false_body, tree, padding_temp, false_pointer, false_body_node->false_body);
+    }
+
+  } else if (auto *wn = dynamic_cast<WhileNode *>(root)) {
+    tree += "While";
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+    draw_tree_rec(wn->condition, tree, padding_temp, "├──", true);
+    draw_tree_rec(wn->body, tree, padding_temp, "└──", false);
+
+  } else if (auto *fn = dynamic_cast<ForNode *>(root)) {
+    tree += "While";
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+    draw_tree_rec(fn->initialization, tree, padding_temp, "├──", true);
+    draw_tree_rec(fn->condition, tree, padding_temp, "├──", true);
+    draw_tree_rec(fn->update, tree, padding_temp, "├──", true);
+    draw_tree_rec(fn->body, tree, padding_temp, "└──", false);
+  } else if (auto *fnn = dynamic_cast<FunctionNode *>(root)) {
+    tree += fnn->identifier.value;
+    std::string padding_temp(padding);
+    if (has_right) {
+      padding_temp += "│  ";
+    } else {
+      padding_temp += "   ";
+    }
+
+    for (size_t i = 0; i < fnn->parameters.size(); i++) {
+      Node *paramter = fnn->parameters[i];
+      std::string pointer = i + 1 < fnn->parameters.size() ? "├──" : "└──";
+      draw_tree_rec(paramter, tree, padding_temp, pointer, i + 1 < fnn->parameters.size());
+    }
   }
 }
 

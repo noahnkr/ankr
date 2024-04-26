@@ -36,6 +36,9 @@ private:
 
   void consume(TokenType expected, std::string message);
 
+  static void draw_tree_rec(Node *root, std::string tree, std::string padding,
+                            std::string pointer, bool has_right);
+
   bool at_end();
 
 public:
@@ -45,6 +48,9 @@ public:
   Node *parse();
 
   static void traverse(Node *root);
+
+  static std::string draw_tree(Node *root);
+
 };
 
 #endif // PARSER_H
