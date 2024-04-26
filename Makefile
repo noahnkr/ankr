@@ -1,6 +1,6 @@
 CXX = g++
 
-CXXFLAGS = -Wall -Werror -ggdb -Iinclude
+CXXFLAGS = -Wall -ggdb -Iinclude
 LDFLAGS =
 ECHO = echo
 

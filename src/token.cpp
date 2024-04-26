@@ -61,17 +61,17 @@ int precedence(TokenType type) {
   case DECREMENT:
   case RETURN:
     return 3;
+  case AND:
+    return 4;
+  case OR:
+    return 5;
   case LESS_THAN:
   case GREATER_THAN:
   case LESS_THAN_OR_EQUAL:
   case GREATER_THAN_OR_EQUAL:
-    return 4;
+    return 6;
   case EQUAL:
   case NOT_EQUAL:
-    return 5;
-  case AND:
-    return 6;
-  case OR:
     return 7;
   default:
     return -1;

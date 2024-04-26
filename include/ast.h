@@ -29,8 +29,9 @@ struct FunctionNode : Node {
   Token identifier;
   std::vector<Node *> parameters;
   BlockNode *body;
-  FunctionNode(Token identifier, std::vector<Node *> parameters, BlockNode *body)
-      : identifier(identifier), parameters(parameters), body(body) {}
+  bool is_definition;
+  FunctionNode(Token identifier, std::vector<Node *> parameters, BlockNode *body, bool is_definition)
+      : identifier(identifier), parameters(parameters), body(body), is_definition(is_definition) {}
   ~FunctionNode() { 
     for (Node *n : parameters) {
       delete n;

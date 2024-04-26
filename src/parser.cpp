@@ -43,6 +43,7 @@ Node *Parser::parse_expression() {
       parenthesis_index--;
     }
 
+    // Function Call
     if (t.type == IDENTIFIER && peek().type == LEFT_PARENTHESIS) {
       FunctionNode *function_root = parse_function(false);
       function_root->identifier = t;
@@ -184,9 +185,9 @@ VariableNode *Parser::parse_variable() {
   return new VariableNode(initializer);
 }
 
-FunctionNode *Parser::parse_function(bool definition) {
+FunctionNode *Parser::parse_function(bool is_definition) {
   Token identifier;
-  if (definition) {
+  if (is_definition) {
     consume(FUNCTION, "Expected 'function' before identifier");
     identifier = advance();
   } else {
@@ -200,7 +201,7 @@ FunctionNode *Parser::parse_function(bool definition) {
     Node *parameter = parse_expression();
 
     // Make sure function parameter is just an identifier on definition
-    if (definition && static_cast<TerminalNode *>(parameter)->token.type != IDENTIFIER)
+    if (is_definition && static_cast<TerminalNode *>(parameter)->token.type != IDENTIFIER)
       throw std::runtime_error("Invalid function parameter");
 
     parameters.push_back(parameter);
@@ -208,11 +209,11 @@ FunctionNode *Parser::parse_function(bool definition) {
   consume(RIGHT_PARENTHESIS, "Expected ')' after parameters");
 
   BlockNode *body = nullptr;
-  if (definition) {
+  if (is_definition) {
     body = parse_block();
   }
 
-  return new FunctionNode(identifier, parameters, body);
+  return new FunctionNode(identifier, parameters, body, is_definition);
 }
 
 UnaryNode *Parser::parse_return() {
@@ -259,7 +260,7 @@ Node *Parser::parse_statement() {
   }
 }
 
-Node *Parser::parse() {
+BlockNode *Parser::parse() {
   std::vector<Node *> root_statements;
 
   while (!at_end()) {
@@ -269,29 +270,32 @@ Node *Parser::parse() {
   return new BlockNode(root_statements);
 }
 
-std::string Parser::draw_tree(Node *root) {
+std::string Parser::draw_tree(BlockNode *root) {
   if (!root) {
     return "";
   }
 
   std::string tree = "";
-  draw_tree_rec(root, tree, "", "", true);
+  for (Node *root_statement : root->statements) {
+    draw_tree_rec(root_statement, &tree, "", "", false);
+  }
 
+  tree.erase(0, 1); // Remove first newline character
   return tree;
 }
 
-void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
+void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
                            std::string pointer, bool has_right) {
-  if (!root) {
+  if (!node) {
     return;
   }
 
-  tree += "\n";
-  tree += padding;
-  tree += pointer;
+  *tree += "\n";
+  *tree += padding;
+  *tree += pointer;
 
-  if (auto *bn = dynamic_cast<BlockNode *>(root)) {
-    tree += "[]"; // Code Block
+  if (auto *bn = dynamic_cast<BlockNode *>(node)) {
+    *tree += "[]"; // Code Block
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -304,8 +308,8 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
       draw_tree_rec(statement, tree, padding_temp, pointer, i + 1 < bn->statements.size());
     }
 
-  } else if (auto *vn = dynamic_cast<VariableNode *>(root)) {
-    tree += "Var";
+  } else if (auto *vn = dynamic_cast<VariableNode *>(node)) {
+    *tree += "var";
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -314,11 +318,11 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
     }
     draw_tree_rec(vn->initializer, tree, padding_temp, "└──", false);
 
-  } else if (auto *tn = dynamic_cast<TerminalNode *>(root)) {
-    tree += tn->token.value;
+  } else if (auto *tn = dynamic_cast<TerminalNode *>(node)) {
+    *tree += tn->token.value;
 
-  } else if (auto *un = dynamic_cast<UnaryNode *>(root)) {
-    tree += un->token.value;
+  } else if (auto *un = dynamic_cast<UnaryNode *>(node)) {
+    *tree += un->token.value;
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -327,8 +331,8 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
     }
     draw_tree_rec(un->child, tree, padding_temp, "└──", false);
 
-  } else if (auto *bnn = dynamic_cast<BinaryNode *>(root)) {
-    tree += bnn->token.value;
+  } else if (auto *bnn = dynamic_cast<BinaryNode *>(node)) {
+    *tree += bnn->token.value;
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -341,8 +345,8 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
 
     draw_tree_rec(bnn->left, tree, padding_temp, pointer_left, bnn->right);
     draw_tree_rec(bnn->right, tree, padding_temp, pointer_right, false);
-  } else if (auto *in = dynamic_cast<IfNode *>(root)) {
-    tree += "If";
+  } else if (auto *in = dynamic_cast<IfNode *>(node)) {
+    *tree += "if";
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -350,18 +354,23 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
       padding_temp += "   ";
     }
 
+    draw_tree_rec(in->condition, tree, padding_temp, "├──", true);
     std::string true_pointer = in->false_body ? "├──" : "└──";
 
-    draw_tree_rec(in->condition, tree, padding_temp, "├──", true);
     draw_tree_rec(in->true_body, tree, padding_temp, true_pointer, in->false_body);
 
-    if (auto *false_body_node = dynamic_cast<IfNode *>(in->false_body)) {
-      std::string false_pointer =  false_body_node->false_body ? "├──" : "└──";
-      draw_tree_rec(in->false_body, tree, padding_temp, false_pointer, false_body_node->false_body);
+    // Else if
+    if (auto *else_if_node = dynamic_cast<IfNode *>(in->false_body)) {
+      std::string false_pointer =  !else_if_node->false_body ? "├──" : "└──";
+      draw_tree_rec(in->false_body, tree, padding_temp, false_pointer, false);
+
+    // Else
+    } else if (auto *else_node = dynamic_cast<BlockNode *>(in->false_body)) {
+      draw_tree_rec(in->false_body, tree, padding_temp, "└──", else_node->statements.size() > 1); 
     }
 
-  } else if (auto *wn = dynamic_cast<WhileNode *>(root)) {
-    tree += "While";
+  } else if (auto *wn = dynamic_cast<WhileNode *>(node)) {
+    *tree += "while";
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -371,8 +380,8 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
     draw_tree_rec(wn->condition, tree, padding_temp, "├──", true);
     draw_tree_rec(wn->body, tree, padding_temp, "└──", false);
 
-  } else if (auto *fn = dynamic_cast<ForNode *>(root)) {
-    tree += "While";
+  } else if (auto *fn = dynamic_cast<ForNode *>(node)) {
+    *tree += "for";
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -383,8 +392,18 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
     draw_tree_rec(fn->condition, tree, padding_temp, "├──", true);
     draw_tree_rec(fn->update, tree, padding_temp, "├──", true);
     draw_tree_rec(fn->body, tree, padding_temp, "└──", false);
-  } else if (auto *fnn = dynamic_cast<FunctionNode *>(root)) {
-    tree += fnn->identifier.value;
+  } else if (auto *fnn = dynamic_cast<FunctionNode *>(node)) {
+    *tree += fnn->is_definition ? "function " : "";
+    *tree += fnn->identifier.value + "(";
+
+    // List function parameters if its being defined
+    for (size_t i = 0; i < fnn->parameters.size() && fnn->is_definition; i++) {
+      TerminalNode* param = dynamic_cast<TerminalNode *>(fnn->parameters[i]);
+      *tree += param->token.value;
+      *tree += i + 1 < fnn->parameters.size() ? ", " : "";
+    }
+    *tree += ")";
+
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -392,10 +411,17 @@ void Parser::draw_tree_rec(Node *root, std::string tree, std::string padding,
       padding_temp += "   ";
     }
 
-    for (size_t i = 0; i < fnn->parameters.size(); i++) {
+    // If its a function call, draw the function's paramter nodes.
+    for (size_t i = 0; i < fnn->parameters.size() && !fnn->is_definition; i++) {
       Node *paramter = fnn->parameters[i];
       std::string pointer = i + 1 < fnn->parameters.size() ? "├──" : "└──";
       draw_tree_rec(paramter, tree, padding_temp, pointer, i + 1 < fnn->parameters.size());
+    }
+
+    // Draw the body of the function definition
+    if (fnn->is_definition) {
+      draw_tree_rec(fnn->body, tree, padding_temp, "└──", false);
+
     }
   }
 }

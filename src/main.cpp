@@ -3,9 +3,7 @@
 #include "../include/token.h"
 #include <fstream>
 #include <iostream>
-#include <stack>
 #include <string>
-#include <utility>
 
 int main(int argc, char *argv[]) {
 
@@ -25,8 +23,9 @@ int main(int argc, char *argv[]) {
       (std::istreambuf_iterator<char>(file)),
       std::istreambuf_iterator<char>()); // Convert input file into string
   Lexer lexer(code);
+  std::cout << "Creating Tokens..." << std::endl;
   std::vector<Token> tokens = lexer.tokenize();
-  std::cout << "Tokens: " << std::endl;
+  std::cout << "Tokens: ";
   for (Token t : tokens) {
     std::cout << t.value << " ";
   }
@@ -34,9 +33,11 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Parsing..." << std::endl;
   Parser parser(tokens);
-  Node *root = parser.parse();
+  BlockNode *root = parser.parse();
   std::cout << "Parsed." << std::endl;
-  std::cout << Parser::draw_tree(root);
+  std::cout << "Traversing..." << std::endl;
+  std::cout << "AST:" << std::endl;
+  std::cout << Parser::draw_tree(root) << std::endl;
   std::cout << "Traversed." << std::endl;
   // Interpreter interpreter;
   // interpreter.visit(root);

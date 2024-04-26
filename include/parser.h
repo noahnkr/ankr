@@ -20,7 +20,7 @@ private:
 
   VariableNode *parse_variable();
 
-  FunctionNode *parse_function(bool definition);
+  FunctionNode *parse_function(bool is_definition);
 
   UnaryNode *parse_return();
 
@@ -36,7 +36,7 @@ private:
 
   void consume(TokenType expected, std::string message);
 
-  static void draw_tree_rec(Node *root, std::string tree, std::string padding,
+  static void draw_tree_rec(Node *node, std::string *tree, std::string padding,
                             std::string pointer, bool has_right);
 
   bool at_end();
@@ -45,11 +45,9 @@ public:
   Parser(std::vector<Token> tokens);
   ~Parser();
 
-  Node *parse();
+  BlockNode *parse();
 
-  static void traverse(Node *root);
-
-  static std::string draw_tree(Node *root);
+  static std::string draw_tree(BlockNode *root);
 
 };
 
