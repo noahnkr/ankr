@@ -1,5 +1,6 @@
 #include "../include/lexer.h"
 #include "../include/parser.h"
+#include "../include/interpreter.h"
 #include "../include/token.h"
 #include <fstream>
 #include <iostream>
@@ -33,14 +34,15 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Parsing..." << std::endl;
   Parser parser(tokens);
-  BlockNode *root = parser.parse();
+  BlockNode *ast = parser.parse();
   std::cout << "Parsed." << std::endl;
   std::cout << "Traversing..." << std::endl;
   std::cout << "AST:" << std::endl;
-  std::cout << Parser::draw_tree(root) << std::endl;
+  std::cout << Parser::draw_tree(ast) << std::endl;
   std::cout << "Traversed." << std::endl;
-  // Interpreter interpreter;
-  // interpreter.visit(root);
+  Interpreter interpreter(ast);
+  std::cout << "Interpreting..." << std::endl;
+  //interpreter.execute();
 
   return 0;
 }

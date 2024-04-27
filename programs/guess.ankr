@@ -1,6 +1,10 @@
 var actual = 5;
 var guesses = 3;
 
+function do_this(value) {
+  return value;
+}
+
 while (guesses > 0) {
   var guess = input();
 

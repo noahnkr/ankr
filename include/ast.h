@@ -2,6 +2,7 @@
 #define AST_H
 
 #include "token.h"
+#include "value.h"
 #include <vector>
 
 struct Node {
@@ -20,9 +21,13 @@ struct BlockNode : Node {
 };
 
 struct VariableNode : Node {
+  Token identifier;
   Node *initializer;
-  VariableNode(Node *initializer) : initializer(initializer) {}
-  ~VariableNode() {}
+  bool is_definition;
+  VariableNode(Token identifier, Node *initializer, bool is_definition)
+      : identifier(identifier), initializer(initializer),
+        is_definition(is_definition) {}
+  ~VariableNode() { delete initializer; }
 };
 
 struct FunctionNode : Node {
@@ -41,8 +46,8 @@ struct FunctionNode : Node {
 };
 
 struct TerminalNode : Node {
-  Token token;
-  TerminalNode(Token token) : token(token) {}
+  Value *v;
+  TerminalNode(Value *v) : v(v) {}
   ~TerminalNode() {}
 };
 

@@ -28,30 +28,42 @@ void Parser::consume(TokenType expected, std::string message) {
   throw std::runtime_error(message);
 }
 
+
 Node *Parser::parse_expression() {
   int parenthesis_index = 0;
   std::vector<Token> infix;
-  std::vector<FunctionNode *> function_calls;
+  std::vector<FunctionNode *> functions;
+  std::vector<VariableNode *> variables;
 
   // Keep reading tokens until we reach a semicolon/comma or the wrapping parenthesis.
   while (!(at_end() || peek().type == END_STATEMENT || peek().type == COMMA ||
            (peek().type == RIGHT_PARENTHESIS && parenthesis_index == 0))) {
     Token t = advance();
+    std::cout <<  t.value << std::endl;
     if (t.type == LEFT_PARENTHESIS) {
       parenthesis_index++;
     } else if (t.type == RIGHT_PARENTHESIS) {
       parenthesis_index--;
     }
 
-    // Function Call
-    if (t.type == IDENTIFIER && peek().type == LEFT_PARENTHESIS) {
-      FunctionNode *function_root = parse_function(false);
-      function_root->identifier = t;
-      function_calls.push_back(function_root);
-      infix.push_back({FUNCTION, t.value});
-    } else {
-      infix.push_back(t);
+    if (t.type == IDENTIFIER) {
+      // Function Call
+      if (peek().type == LEFT_PARENTHESIS) {
+        FunctionNode *function_root = parse_function(false);
+        function_root->identifier = t;
+        functions.push_back(function_root);
+        infix.push_back({FUNCTION, t.value});
+      // Variable
+      } else {
+        VariableNode *variable_root = new VariableNode(t, nullptr, false);
+        variables.push_back(variable_root);
+        infix.push_back({VAR, t.value});
+      }
+
+      continue;
     }
+
+    infix.push_back(t);
   }
 
   // Skip semicolon/comma
@@ -59,27 +71,59 @@ Node *Parser::parse_expression() {
     advance();
   }
 
-  /*std::cout << "Infix: ";
+  std::cout << "Infix: ";
   for (Token t : infix) {
     std::cout << t.value << " ";
   }
-  std::cout << std::endl;*/
+  std::cout << std::endl;
 
   // Convert tokens to postfix
   std::vector<Token> postfix = to_postfix(infix);
 
-  /*std::cout << "Postfix: ";
+  std::cout << "Postfix: ";
   for (Token t : postfix) {
     std::cout << t.value << " ";
   }
-  std::cout << std::endl;*/
+  std::cout << std::endl;
 
   // Build Expression Tree
   std::stack<Node *> stack;
   for (Token t : postfix) {
     if (is_operand(t.type)) {
-      stack.push(new TerminalNode(t));
-      
+      Node *operand;
+      if (t.type == INT) {
+        IntValue *val = new IntValue(stoi(t.value));
+        operand = new TerminalNode(val);
+
+      } else if (t.type == FLOAT) {
+        FloatValue *val = new FloatValue(stof(t.value));
+        operand = new TerminalNode(val);
+
+      } else if (t.type == TRUE || t.type == FALSE) {
+        BoolValue *val = new BoolValue(t.value == "true");
+        operand = new TerminalNode(val);
+
+      } else if (t.type == STRING) {
+        StringValue *val = new StringValue(t.value);
+        operand = new TerminalNode(val);
+
+      } else if (t.type == VAR) {
+        for (VariableNode *vn : variables) {
+          if (vn->identifier.value  == t.value) {
+            operand = vn;
+            break;
+          }
+        }
+      } else if (t.type == FUNCTION) {
+        for (FunctionNode *fn : functions) {
+          if (fn->identifier.value == t.value) {
+            operand = fn;
+            break;
+          }
+        }
+      }    
+      stack.push(operand);
+
     } else if (is_operator(t.type)) {
       if (is_unary(t.type)) {
         Node *operand = stack.top();
@@ -92,13 +136,6 @@ Node *Parser::parse_expression() {
         Node *left = stack.top();
         stack.pop();
         stack.push(new BinaryNode(t, left, right));
-      }
-
-    } else if (t.type == FUNCTION) {
-      for (FunctionNode *n : function_calls) {
-        if (n->identifier.value == t.value) {
-          stack.push(n);
-        }
       }
     }
   }
@@ -120,7 +157,7 @@ std::vector<Token> Parser::to_postfix(std::vector<Token> infix) {
 
   for (size_t i = 0; i < infix.size(); i++) {
     Token t = infix[i];
-    if (is_operand(t.type) || t.type == FUNCTION) {
+    if (is_operand(t.type)) {
       postfix.push_back(t);
     } else if (t.type == LEFT_PARENTHESIS) {
       stack.push(t);
@@ -179,10 +216,19 @@ WhileNode *Parser::parse_while() {
   return new WhileNode(condition, body);
 }
 
-VariableNode *Parser::parse_variable() {
-  consume(VAR, "Expected 'var' declaration");
-  Node *initializer = parse_expression();
-  return new VariableNode(initializer);
+VariableNode *Parser::parse_variable(bool is_definition) {
+  Token identifier;
+  Node *initializer = nullptr;
+
+  if (is_definition) {
+    consume(VAR, "Expected 'var' declaration");
+    identifier = peek();
+    initializer = parse_expression();
+  } else {
+    identifier = advance();
+  }
+
+  return new VariableNode(identifier, initializer, is_definition);
 }
 
 FunctionNode *Parser::parse_function(bool is_definition) {
@@ -191,7 +237,7 @@ FunctionNode *Parser::parse_function(bool is_definition) {
     consume(FUNCTION, "Expected 'function' before identifier");
     identifier = advance();
   } else {
-    identifier = {IDENTIFIER, ""}; // Empty identifier for now, will be set after expression is parsed.
+    identifier = {IDENTIFIER, ""}; // Identifier already read, will be set after expression is parsed.
   }
 
   consume(LEFT_PARENTHESIS, "Expected '(' after identifier");
@@ -199,9 +245,8 @@ FunctionNode *Parser::parse_function(bool is_definition) {
 
   while (peek().type != RIGHT_PARENTHESIS) {
     Node *parameter = parse_expression();
-
-    // Make sure function parameter is just an identifier on definition
-    if (is_definition && static_cast<TerminalNode *>(parameter)->token.type != IDENTIFIER)
+    // Make sure function parameter is just an empty variable
+    if (is_definition && static_cast<VariableNode *>(parameter)->initializer)
       throw std::runtime_error("Invalid function parameter");
 
     parameters.push_back(parameter);
@@ -253,7 +298,7 @@ Node *Parser::parse_statement() {
     case IF: return parse_if();
     case WHILE: return parse_while();
     case FOR: return parse_for();
-    case VAR: return parse_variable();
+    case VAR: return parse_variable(true);
     case FUNCTION: return parse_function(true);
     case RETURN: return parse_return();
     default: return parse_expression();
@@ -309,7 +354,8 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
     }
 
   } else if (auto *vn = dynamic_cast<VariableNode *>(node)) {
-    *tree += "var";
+    
+    *tree += vn->is_definition ? "var" : vn->identifier.value;
     std::string padding_temp(padding);
     if (has_right) {
       padding_temp += "│  ";
@@ -319,7 +365,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
     draw_tree_rec(vn->initializer, tree, padding_temp, "└──", false);
 
   } else if (auto *tn = dynamic_cast<TerminalNode *>(node)) {
-    *tree += tn->token.value;
+    *tree += tn->v->to_string();
 
   } else if (auto *un = dynamic_cast<UnaryNode *>(node)) {
     *tree += un->token.value;
@@ -398,8 +444,8 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
 
     // List function parameters if its being defined
     for (size_t i = 0; i < fnn->parameters.size() && fnn->is_definition; i++) {
-      TerminalNode* param = dynamic_cast<TerminalNode *>(fnn->parameters[i]);
-      *tree += param->token.value;
+      VariableNode* param = dynamic_cast<VariableNode *>(fnn->parameters[i]);
+      *tree += param->identifier.value;
       *tree += i + 1 < fnn->parameters.size() ? ", " : "";
     }
     *tree += ")";
@@ -427,3 +473,5 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
 }
 
 bool Parser::at_end() { return pos >= static_cast<int>(tokens.size()); }
+
+

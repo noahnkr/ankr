@@ -18,7 +18,7 @@ private:
 
   ForNode *parse_for();
 
-  VariableNode *parse_variable();
+  VariableNode *parse_variable(bool is_definition);
 
   FunctionNode *parse_function(bool is_definition);
 
