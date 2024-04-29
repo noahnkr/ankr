@@ -37,7 +37,7 @@ private:
   void consume(TokenType expected, std::string message);
 
   static void draw_tree_rec(Node *node, std::string *tree, std::string padding,
-                            std::string pointer, bool has_right);
+                            std::string pointer, bool has_next);
 
   bool at_end();
 

@@ -42,7 +42,8 @@ int main(int argc, char *argv[]) {
   std::cout << "Traversed." << std::endl;
   Interpreter interpreter(ast);
   std::cout << "Interpreting..." << std::endl;
-  //interpreter.execute();
+  interpreter.execute();
+  std::cout << "Interpreted." << std::endl;
 
   return 0;
 }

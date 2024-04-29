@@ -45,6 +45,19 @@ bool is_unary(TokenType type) {
   return unary_operators.count(type) > 0;
 }
 
+bool is_assign(TokenType type) {
+  std::unordered_set<TokenType> assign_operators = {
+    ASSIGN,
+    ASSIGN_ADD,
+    ASSIGN_SUBTRACT,
+    ASSIGN_MULTIPLY,
+    ASSIGN_DIVIDE,
+    ASSIGN_MODULO
+  };
+
+  return assign_operators.count(type) > 0;
+}
+
 
 int precedence(TokenType type) {
   switch (type) {

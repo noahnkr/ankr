@@ -245,8 +245,8 @@ FunctionNode *Parser::parse_function(bool is_definition) {
 
   while (peek().type != RIGHT_PARENTHESIS) {
     Node *parameter = parse_expression();
-    // Make sure function parameter is just an empty variable
-    if (is_definition && static_cast<VariableNode *>(parameter)->initializer)
+    // Make sure function parameter is just an empty variable on definition
+    if (is_definition && static_cast<VariableNode *>(parameter))
       throw std::runtime_error("Invalid function parameter");
 
     parameters.push_back(parameter);
@@ -330,7 +330,7 @@ std::string Parser::draw_tree(BlockNode *root) {
 }
 
 void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
-                           std::string pointer, bool has_right) {
+                           std::string pointer, bool has_next) {
   if (!node) {
     return;
   }
@@ -342,7 +342,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   if (auto *bn = dynamic_cast<BlockNode *>(node)) {
     *tree += "[]"; // Code Block
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -357,7 +357,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
     
     *tree += vn->is_definition ? "var" : vn->identifier.value;
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -370,7 +370,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   } else if (auto *un = dynamic_cast<UnaryNode *>(node)) {
     *tree += un->token.value;
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -380,7 +380,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   } else if (auto *bnn = dynamic_cast<BinaryNode *>(node)) {
     *tree += bnn->token.value;
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -394,7 +394,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   } else if (auto *in = dynamic_cast<IfNode *>(node)) {
     *tree += "if";
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -418,7 +418,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   } else if (auto *wn = dynamic_cast<WhileNode *>(node)) {
     *tree += "while";
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -429,7 +429,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   } else if (auto *fn = dynamic_cast<ForNode *>(node)) {
     *tree += "for";
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";
@@ -451,7 +451,7 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
     *tree += ")";
 
     std::string padding_temp(padding);
-    if (has_right) {
+    if (has_next) {
       padding_temp += "│  ";
     } else {
       padding_temp += "   ";

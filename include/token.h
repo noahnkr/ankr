@@ -70,6 +70,8 @@ extern bool is_operand(TokenType type);
 
 extern bool is_unary(TokenType type);
 
+extern bool is_assign(TokenType type);
+
 extern int precedence(TokenType type);
 
 extern std::map<std::string, Token> token_map;
