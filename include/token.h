@@ -52,6 +52,9 @@ enum TokenType {
   AND,
   OR,
   NOT,
+  // IO
+  OUTPUT,
+  INPUT,
   // Other
   END_STATEMENT,
   END_FILE,

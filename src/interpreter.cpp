@@ -1,8 +1,11 @@
 #include "../include/interpreter.h"
+#include <complex>
 #include <sstream>
 #include <stdexcept>
 
-Interpreter::Interpreter(BlockNode* ast) : ast(ast), scope(), scope_index() {};
+Interpreter::Interpreter(BlockNode* ast) : ast(ast), scope(), scope_index() {
+  scope.push_back(std::vector<Node *>());
+};
 
 Interpreter::~Interpreter() { delete ast; };
 
@@ -120,22 +123,27 @@ Value* Interpreter::evaluate(Node *node) {
   }
 
   if (auto *vn = dynamic_cast<VariableNode *>(node)) {
+    std::cout << "Evaluating Variable" << std::endl;
     return get_variable_value(vn->identifier.value);
 
   } else if (auto *tn = dynamic_cast<TerminalNode *>(node)) {
+    std::cout << "Evaluating Terminal Node" << std::endl;
     return tn->v;
 
   } else if (auto *un = dynamic_cast<UnaryNode *>(node)) {
+    std::cout << "Evaluating UnaryNode" << std::endl;
     Value *child = evaluate(un->child);
     return child->apply_operator(un->token, nullptr); // Unary operation applies to child, 
                                                       // therefore no need for 2nd node.
 
   } else if (auto *bnn = dynamic_cast<BinaryNode *>(node)) {
+    std::cout << "Evaluating BinaryNode" << std::endl;
     Value *left = evaluate(bnn->left);
     Value *right = evaluate(bnn->right);
     return left->apply_operator(bnn->token, right);
 
   } else if (auto *fnn = dynamic_cast<FunctionNode *>(node)) {
+    std::cout << "Evaluating FunctionNode" << std::endl;
     std::vector<Value *> parameters;
     for (Node *p : fnn->parameters) {
       parameters.push_back(evaluate(p));
@@ -154,11 +162,13 @@ void Interpreter::visit(Node *node) {
   }
 
   if (auto *bn = dynamic_cast<BlockNode *>(node)) {
+    std::cout << "Visiting BlockNode" << std::endl;
     for (Node *s : bn->statements) {
       visit(s);
     }
 
   } else if (auto *vn = dynamic_cast<VariableNode *>(node)) {
+    std::cout << "Visiting VariableNode" << std::endl;
     if (vn->is_definition) {
       scope[scope_index].push_back(vn);
     } else {
@@ -166,6 +176,7 @@ void Interpreter::visit(Node *node) {
     }
 
   } else if (auto *un = dynamic_cast<UnaryNode *>(node)) {
+    std::cout << "Visiting UnaryNode" << std::endl;
     if (un->token.type == RETURN && scope_index == 0) {
       throw std::runtime_error("Return is not allowed here");
     }
@@ -178,6 +189,7 @@ void Interpreter::visit(Node *node) {
     }
 
   } else if (auto *bnn = dynamic_cast<BinaryNode *>(node)) {
+    std::cout << "Visiting BinaryNode" << std::endl;
     if (is_assign(bnn->token.type)) {
       Token assign_operator = bnn->token;
       VariableNode *variable = dynamic_cast<VariableNode *>(bnn->left);
@@ -189,15 +201,36 @@ void Interpreter::visit(Node *node) {
       evaluate(bnn);
     }
   } else if (auto *in = dynamic_cast<IfNode *>(node)) {
-  } else if (auto *wn = dynamic_cast<WhileNode *>(node)) {
+    std::cout << "Visiting IfNode" << std::endl;
+    Value *condition_value = evaluate(in->condition);
+    if (auto *bool_condition = dynamic_cast<BoolValue *>(condition_value)) {
+      if (bool_condition->value) {
+        visit(in->true_body);
+      } else {
+        visit(in->false_body);
+      }
+    } else {
+      throw std::runtime_error("If condition must be a boolean expression");
+    }
+  } else if(auto *wn = dynamic_cast<WhileNode *>(node)) {
+    std::cout << "Visiting WhileNode" << std::endl;
+    while (dynamic_cast<BoolValue *>(evaluate(wn->condition))->value) {
+      visit(wn->body);
+    }
   } else if (auto *fn = dynamic_cast<ForNode *>(node)) {
+    visit(fn->initialization);
+    while (dynamic_cast<BoolValue *>(evaluate(fn->condition))->value) {
+      visit(fn->body);
+      visit(fn->update);
+    }
   } else if (auto *fnn = dynamic_cast<FunctionNode *>(node)) {
+    std::cout << "Visiting ForNode" << std::endl;
     if (fnn->is_definition) {
       scope[scope_index].push_back(fnn);
     } else {
       evaluate(fnn);
     }
-  } else {}
+  } 
 }
 
 void Interpreter::execute() {
