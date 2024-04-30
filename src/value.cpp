@@ -3,6 +3,22 @@
 #include <stdexcept>
 
 Value *IntValue::apply_operator(Token t, Value *to) {
+  //  Unary Operator
+  if (!to) {
+    switch (t.type) {
+    case NOT:
+      throw std::runtime_error("Invalid operands for expression: !'int'");
+    case NEGATIVE:
+      return new IntValue(-this->value);
+    case INCREMENT:
+      return new IntValue(this->value + 1);
+    case DECREMENT:
+      return new IntValue(this->value - 1);
+    case RETURN:
+      return this;
+    default: throw std::runtime_error("Invalid operator");
+    }
+  }
   auto *is_string = dynamic_cast<StringValue *>(to);
   auto *is_bool = dynamic_cast<BoolValue *>(to);
   auto *is_float = dynamic_cast<FloatValue *>(to);
@@ -63,16 +79,6 @@ Value *IntValue::apply_operator(Token t, Value *to) {
     } else {
       return new IntValue(this->value % dynamic_cast<IntValue *>(to)->value);
     }
-  case NOT:
-    throw std::runtime_error("Invalid operands for expression: !'int'");
-  case NEGATIVE:
-    return new IntValue(-this->value);
-  case INCREMENT:
-    return new IntValue(this->value + 1);
-  case DECREMENT:
-    return new IntValue(this->value - 1);
-  case RETURN:
-    return this;
   case AND:
   case OR:
     throw std::runtime_error(msg.str());
@@ -106,6 +112,22 @@ Value *IntValue::apply_operator(Token t, Value *to) {
 }
 
 Value *FloatValue::apply_operator(Token t, Value *to) {
+  if (!to) {
+    switch (t.type) {
+    case NOT:
+      throw std::runtime_error("Invalid operands for expression: !'int'");
+    case NEGATIVE:
+      return new IntValue(-this->value);
+    case INCREMENT:
+      return new IntValue(this->value + 1);
+    case DECREMENT:
+      return new IntValue(this->value - 1);
+    case RETURN:
+      return this;
+    default: throw std::runtime_error("Invalid operator");
+    }
+  }
+
   auto *is_string = dynamic_cast<StringValue *>(to);
   auto *is_bool = dynamic_cast<BoolValue *>(to);
   auto *is_int = dynamic_cast<IntValue *>(to);

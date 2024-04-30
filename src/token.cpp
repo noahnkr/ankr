@@ -34,7 +34,7 @@ bool is_operator(TokenType type) {
 }
 
 bool is_operand(TokenType type) {
-  std::unordered_set<TokenType> operands = {INT, FLOAT, STRING, TRUE, FALSE, VAR, FUNCTION};
+std::unordered_set<TokenType> operands = {INT, FLOAT, STRING, TRUE, FALSE, VAR, FUNCTION};
 
   return operands.count(type) > 0;
 }

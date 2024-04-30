@@ -1,21 +1,25 @@
-var actual = 5;
-var guesses = 3;
+var guesses = 5;
+var guess_num = 72;
+var guess = 0;
 
-function do_this(value) {
-  return value;
-}
+while (guess != guess_num && guesses > 0) {
+  output("Guess a number. Guesses Remaining: " + guesses);
+  guess = input();
 
-while (guesses > 0) {
-  var guess = input();
+  if (guess > guess_num) {
+    output("Too High!");
+    guesses--;
 
-  if (actual == guess) {
-    print("You win!");
-    break;
-  } else if (actual > guess) {
-    print("Too Low!");
+  } else if (guess < guess_num) {
+    output("Too Low!");
+    guesses--;
+
   } else {
-    print("Too High!");
+    output("You Win! The number was: " + guess_num);
   }
+
 }
 
-
+if (guesses == 0) {
+  output("You Lose! The number was: " + guess_num);
+}

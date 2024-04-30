@@ -40,7 +40,7 @@ int main(int argc, char *argv[]) {
   std::cout << "AST:" << std::endl;
   std::cout << Parser::draw_tree(ast) << std::endl;
   std::cout << "Traversed." << std::endl;
-  Interpreter interpreter(ast);
+  Interpreter interpreter(ast, false);
   std::cout << "Interpreting..." << std::endl;
   interpreter.execute();
   std::cout << "Interpreted." << std::endl;

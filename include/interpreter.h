@@ -8,8 +8,12 @@ class Interpreter {
 private:
   BlockNode *ast;
 
+  bool debug;
+
   std::vector<std::vector<Node *>> scope;
   size_t scope_index;
+
+  void print_scope();
 
   Value *get_variable_value(std::string identifier);
 
@@ -24,7 +28,7 @@ private:
   void visit(Node *node);
 
 public:
-  Interpreter(BlockNode *ast);
+  Interpreter(BlockNode *ast, bool debug);
   ~Interpreter();
 
   void execute();
