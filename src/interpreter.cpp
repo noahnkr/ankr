@@ -3,6 +3,11 @@
 #include <sstream>
 #include <stdexcept>
 
+// TODO:
+//  - Verify functionality of functions, for loops, and scope management.
+//  - Handle comments.
+//  - Better error handling with line numbers.
+//
 Interpreter::Interpreter(std::string code, bool debug_mode)
     : ast(), debug_mode(debug_mode), scope(), scope_index() {
   scope.push_back(std::vector<Node *>()); // Global Scope
