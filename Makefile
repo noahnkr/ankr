@@ -4,7 +4,7 @@ CXXFLAGS = -Wall -ggdb -Iinclude
 LDFLAGS =
 ECHO = echo
 
-BIN = run
+BIN = ankr
 SRCS = $(wildcard src/*.cpp)
 OBJS = $(SRCS:src/%.cpp=build/%.o)
 
