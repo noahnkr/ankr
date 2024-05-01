@@ -2,13 +2,15 @@
 #define INTERPRETER_H
 
 #include "ast.h"
+#include "parser.h"
+#include "lexer.h"
 #include <vector>
 
 class Interpreter {
 private:
   BlockNode *ast;
 
-  bool debug;
+  bool debug_mode;
 
   std::vector<std::vector<Node *>> scope;
   size_t scope_index;
@@ -28,7 +30,7 @@ private:
   void visit(Node *node);
 
 public:
-  Interpreter(BlockNode *ast, bool debug);
+  Interpreter(std::string code, bool debug_mode);
   ~Interpreter();
 
   void execute();

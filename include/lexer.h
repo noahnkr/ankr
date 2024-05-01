@@ -10,7 +10,9 @@
 class Lexer {
 private:
   std::string code;
+
   size_t pos;
+
   char current_char;
 
   void advance();

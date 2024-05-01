@@ -8,7 +8,10 @@
 class Parser {
 private:
   std::vector<Token> tokens;
+
   int pos;
+
+  bool debug_mode;
 
   BlockNode *parse_block();
 
@@ -42,7 +45,7 @@ private:
   bool at_end();
 
 public:
-  Parser(std::vector<Token> tokens);
+  Parser(std::vector<Token> tokens, bool debug_mode);
   ~Parser();
 
   BlockNode *parse();

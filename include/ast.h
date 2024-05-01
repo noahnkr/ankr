@@ -5,11 +5,18 @@
 #include "value.h"
 #include <vector>
 
+/*
+ * Abstract Node Class
+ */
 struct Node {
   virtual ~Node() = default;
   virtual std::string to_string() const = 0;
 };
 
+/*
+ * Node that stores a list of statements. Represents a code "block" surrounded
+ * by curly braces used in 'if', 'while', 'for', and function definitions.
+ */
 struct BlockNode : Node {
   std::vector<Node *> statements;
 
@@ -23,6 +30,12 @@ struct BlockNode : Node {
   }
 };
 
+/*
+ * Stores information for a variable. This Node has two mutually exclusive uses
+ * which are for variable definitions and variable calls. For definitions, it stores the 
+ * evaluated value of the initializer sub-tree (for definitions, i.e 'var x = 10'). For calls,
+ * it stores an identifier of variable with no initializer, whos value will be * found later.
+ */
 struct VariableNode : Node {
   Token identifier;
   Node *initializer;
@@ -35,6 +48,11 @@ struct VariableNode : Node {
   ~VariableNode() { delete initializer; }
 };
 
+/*
+ * Similar to the variable node, this also has two functionalities for function definitions and function calls.
+ * This is achieved storing the identifier of the function and either storing empty VariableNodes with just the
+ * identifier for function parameters on defition, or a root of an expression node for function call parameters.
+ */
 struct FunctionNode : Node {
   Token identifier;
   std::vector<Node *> parameters;
@@ -64,6 +82,9 @@ struct FunctionNode : Node {
   }
 };
 
+/*
+ * Leaf node that stores an operand (int, float, string, or bool).
+ */
 struct TerminalNode : Node {
   Value *v;
 
@@ -72,6 +93,9 @@ struct TerminalNode : Node {
   ~TerminalNode() {}
 };
 
+/*
+ * Unary operator, ('++', '--', '!', '-', 'return').
+ */
 struct UnaryNode : Node {
   Token token;
   Node *child;
@@ -81,6 +105,9 @@ struct UnaryNode : Node {
   ~UnaryNode() { delete child; }
 };
 
+/*
+ * Binary operator, i.e ('+', '-', '&&', '>=', '=', '*=', etc).
+ */
 struct BinaryNode : Node {
   Token token;
   Node *left;
@@ -95,6 +122,11 @@ struct BinaryNode : Node {
   }
 };
 
+/*
+ * Represents an if node which stores the root of the condition expression. If the expression
+ * is evaluated to be true, the true_body BlockNode will be visited. The false_body can either
+ * be a BlockNode or another chained if statement for 'else if'.
+ */
 struct IfNode : Node {
   Node *condition;
   Node *true_body;
@@ -110,6 +142,9 @@ struct IfNode : Node {
   }
 };
 
+/*
+ * Represents a while loop. If the condition is evaluated to be true, the body BlockNode will be visied.
+ */
 struct WhileNode : Node {
   Node *condition;
   BlockNode *body;
@@ -122,6 +157,10 @@ struct WhileNode : Node {
   }
 };
 
+/*
+ * Represents a for loop. Performs the initialization statement, evaluates the
+ * condition, if true, it visits the body BlockNode and then updates.
+ */
 struct ForNode : Node {
   Node *initialization;
   Node *condition;

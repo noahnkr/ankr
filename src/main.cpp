@@ -1,7 +1,4 @@
-#include "../include/lexer.h"
-#include "../include/parser.h"
 #include "../include/interpreter.h"
-#include "../include/token.h"
 #include <fstream>
 #include <iostream>
 #include <string>
@@ -13,6 +10,15 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
+
+  // Enable debug mode from command line
+  bool debug_mode = false;
+  for (int i = 1; i < argc; i++) {
+    if (strcmp(argv[i], "-d") == 0) {
+      debug_mode = true;
+    }
+  }
+
   std::string filename = argv[1];
   std::ifstream file(filename);
   if (!file.is_open()) {
@@ -20,30 +26,11 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  std::string code(
-      (std::istreambuf_iterator<char>(file)),
-      std::istreambuf_iterator<char>()); // Convert input file into string
-  Lexer lexer(code);
-  std::cout << "Creating Tokens..." << std::endl;
-  std::vector<Token> tokens = lexer.tokenize();
-  std::cout << "Tokens: ";
-  for (Token t : tokens) {
-    std::cout << t.value << " ";
-  }
-  std::cout << std::endl;
+  // Convert file into string of text
+  std::string code((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()); 
 
-  std::cout << "Parsing..." << std::endl;
-  Parser parser(tokens);
-  BlockNode *ast = parser.parse();
-  std::cout << "Parsed." << std::endl;
-  std::cout << "Traversing..." << std::endl;
-  std::cout << "AST:" << std::endl;
-  std::cout << Parser::draw_tree(ast) << std::endl;
-  std::cout << "Traversed." << std::endl;
-  Interpreter interpreter(ast, false);
-  std::cout << "Interpreting..." << std::endl;
+  Interpreter interpreter(code, debug_mode);
   interpreter.execute();
-  std::cout << "Interpreted." << std::endl;
 
   return 0;
 }

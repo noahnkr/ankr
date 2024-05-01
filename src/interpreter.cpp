@@ -3,11 +3,38 @@
 #include <sstream>
 #include <stdexcept>
 
-Interpreter::Interpreter(BlockNode* ast, bool debug) : ast(ast), debug(debug), scope(), scope_index() {
-  scope.push_back(std::vector<Node *>());
+Interpreter::Interpreter(std::string code, bool debug_mode) : ast(), debug_mode(debug_mode), scope(), scope_index() {
+  scope.push_back(std::vector<Node *>()); // Global Scope
+  Lexer lexer(code);
+
+  if (debug_mode) {
+    std::cout << "Creating Tokens...";
+  }
+
+  std::vector<Token> tokens = lexer.tokenize();
+
+  if (debug_mode) {
+    std::cout << "Created." << std::endl;
+    std::cout << "Tokens: ";
+    for (Token t : tokens) {
+      std::cout << t.value << " ";
+    }
+    std::cout << std::endl;
+    std::cout << "Parsing...";
+  }
+
+  Parser parser(tokens, debug_mode);
+  ast = parser.parse();
+
+  if(debug_mode) {
+    std::cout << "Parsed." << std::endl
+              << "AST:" << std::endl;
+    Parser::draw_tree(ast);
+  }
+
 };
 
-Interpreter::~Interpreter() { delete ast; };
+Interpreter::~Interpreter() { delete ast; }; // TODO: Traverse tree and delete each node
 
 void Interpreter::print_scope() {
   int level = 0;

@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 
-Parser::Parser(std::vector<Token> tokens) : tokens(tokens), pos(0) {}
+Parser::Parser(std::vector<Token> tokens, bool debug_mode) : tokens(tokens), pos(0), debug_mode(debug_mode) {}
 Parser::~Parser() {}
 
 Token Parser::peek() {
@@ -39,7 +39,9 @@ Node *Parser::parse_expression() {
   while (!(at_end() || peek().type == END_STATEMENT || peek().type == COMMA ||
            (peek().type == RIGHT_PARENTHESIS && parenthesis_index == 0))) {
     Token t = advance();
-    std::cout <<  t.value << std::endl;
+    if (debug_mode) {
+      std::cout <<  t.value << std::endl;
+    }
     if (t.type == LEFT_PARENTHESIS) {
       parenthesis_index++;
     } else if (t.type == RIGHT_PARENTHESIS) {
@@ -72,20 +74,24 @@ Node *Parser::parse_expression() {
     advance();
   }
 
-  std::cout << "Infix: ";
-  for (Token t : infix) {
-    std::cout << t.value << " ";
+  if (debug_mode) {
+    std::cout << "Infix: ";
+    for (Token t : infix) {
+      std::cout << t.value << " ";
+    }
+    std::cout << std::endl;
   }
-  std::cout << std::endl;
 
   // Convert tokens to postfix
   std::vector<Token> postfix = to_postfix(infix);
 
-  std::cout << "Postfix: ";
-  for (Token t : postfix) {
-    std::cout << t.value << " ";
+  if (debug_mode) {
+    std::cout << "Postfix: ";
+    for (Token t : postfix) {
+      std::cout << t.value << " ";
+    }
+    std::cout << std::endl;
   }
-  std::cout << std::endl;
 
   // Build Expression Tree
   std::stack<Node *> stack;
@@ -198,7 +204,7 @@ IfNode *Parser::parse_if() {
   if (peek().type == ELSE) {
     advance();
     if (peek().type == IF) {
-      false_body = parse_if(); // Recursively parse nesed if statements
+      false_body = parse_if(); // Recursively parse nested if statements
     } else {
       false_body = parse_block();
     }
