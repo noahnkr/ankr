@@ -2,6 +2,7 @@
 #include <sstream>
 #include <stdexcept>
 
+
 Value *IntValue::apply_operator(Token t, Value *to) {
   //  Unary Operator
   if (!to) {
@@ -320,4 +321,46 @@ Value *BoolValue::apply_operator(Token t, Value *to) {
 
 Value *VoidValue::apply_operator(Token t, Value *to) {
   throw std::runtime_error("Cannot evaluate type 'void'");
+}
+
+
+std::string IntValue::to_string() const {
+  return std::to_string(value);
+}
+
+std::string IntValue::get_type() const {
+  return "int";
+}
+
+
+std::string FloatValue::to_string() const {
+  return std::to_string(value);
+}
+
+std::string FloatValue::get_type() const {
+  return "float";
+}
+
+std::string StringValue::to_string() const {
+  return value;
+}
+
+std::string StringValue::get_type() const {
+  return "string";
+}
+
+std::string BoolValue::to_string() const {
+  return std::to_string(value);
+}
+
+std::string BoolValue::get_type() const {
+  return "bool";
+}
+
+std::string VoidValue::to_string() const {
+  return "";
+}
+
+std::string VoidValue::get_type() const {
+  return "void";
 }

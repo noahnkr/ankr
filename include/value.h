@@ -1,61 +1,109 @@
+#ifndef VALUE_H
+#define VALUE_H
+
 #include "token.h"
 #include <iostream>
 #include <memory>
 #include <string>
 
+/**
+ * Abstract base class for all value types in the interpreter.
+ * Provides the interface for converting values to strings, getting the type name,
+ * and applying operators between values.
+ */
 class Value {
 public:
   virtual ~Value() {}
+
+  /**
+   * Converts the value to a string representation.
+   * @return String representation of the value.
+   */
   virtual std::string to_string() const = 0;
+
+  /**
+   * Retrieves the type name of the value as a string.
+   * @return The type name of the value.
+   */
   virtual std::string get_type() const = 0;
+
+  /**
+   * Applies an operator to this value and another value.
+   * @param op The operator as a token.
+   * @param to The value to apply the operator with.
+   * @return A new Value instance that is the result of the operation.
+   */
   virtual Value* apply_operator(Token op, Value *to) = 0;
 };
 
+/**
+ * Represents an integer value in the interpreter.
+ */
 class IntValue : public Value {
 public:
-  int value;
+  int value; ///< The integer value.
 
-  IntValue(int value) : value(value) {}
-  std::string to_string() const override { return std::to_string(value); }
-  std::string get_type() const override { return "int"; }
+  explicit IntValue(int value) : value(value) {}
+
+  std::string to_string() const override;
+  std::string get_type() const override;
   Value* apply_operator(Token op, Value *to) override;
 };
 
+/**
+ * Represents a floating-point value in the interpreter.
+ */
 class FloatValue : public Value {
 public:
-  double value;
+  double value; ///< The floating-point value.
 
-  FloatValue(float value) : value(value) {}
-  std::string to_string() const override { return std::to_string(value); }
-  std::string get_type() const override { return "float"; }
+  explicit FloatValue(float value) : value(value) {}
+
+  std::string to_string() const override;
+  std::string get_type() const override;
   Value* apply_operator(Token op, Value *to) override;
 };
 
+/**
+ * Represents a string value in the interpreter.
+ */
 class StringValue : public Value {
 public:
-  std::string value;
+  std::string value; ///< The string value.
 
-  StringValue(std::string value) : value(std::move(value)) {}
-  std::string to_string() const override { return value; }
-  std::string get_type() const override { return "string"; }
+  explicit StringValue(std::string value) : value(std::move(value)) {}
+
+  std::string to_string() const override;
+  std::string get_type() const override;
   Value* apply_operator(Token op, Value *to) override;
 };
 
+/**
+ * Represents a boolean value in the interpreter.
+ */
 class BoolValue : public Value {
 public:
-  bool value;
+  bool value; ///< The boolean value.
 
-  BoolValue(bool value) : value(value) {}
-  std::string to_string() const override { return value ? "true" : "false"; }
-  std::string get_type() const override { return "bool"; }
+  explicit BoolValue(bool value) : value(value) {}
+
+  std::string to_string() const override;
+  std::string get_type() const override;
   Value* apply_operator(Token op, Value *to) override;
 };
 
+/**
+ * Represents a void value in the interpreter, typically used to signify no return value.
+ */
 class VoidValue : public Value {
 public:
   int val;
-  VoidValue() {}
-  std::string to_string() const override { return ""; }
-  std::string get_type() const override { return "void"; }
+
+  VoidValue() : val(0) {}
+
+  std::string to_string() const override;
+  std::string get_type() const override;
   Value* apply_operator(Token op, Value *to) override;
 };
+
+#endif // VALUE_H

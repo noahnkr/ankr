@@ -5,178 +5,174 @@
 #include "value.h"
 #include <vector>
 
-/*
- * Abstract Node Class
+/**
+ * Base class for all AST nodes.
+ * Provides a virtual destructor and a pure virtual method for converting nodes to strings.
  */
 struct Node {
   virtual ~Node() = default;
   virtual std::string to_string() const = 0;
 };
 
-/*
- * Node that stores a list of statements. Represents a code "block" surrounded
- * by curly braces used in 'if', 'while', 'for', and function definitions.
+/**
+ * Represents a block of statements, typically enclosed by curly braces.
+ * Used in control structures and function bodies.
  */
 struct BlockNode : Node {
-  std::vector<Node *> statements;
+  std::vector<Node*> statements;
 
-  std::string to_string() const override { return "[]"; }
-
-  BlockNode(std::vector<Node *> statements) : statements(statements) {}
+  BlockNode(std::vector<Node*> statements) : statements(std::move(statements)) {}
   ~BlockNode() {
-    for (Node *n : statements) {
+    for (Node* n : statements) {
       delete n;
     }
   }
+
+  std::string to_string() const override { return "Block"; }
 };
 
-/*
- * Stores information for a variable. This Node has two mutually exclusive uses
- * which are for variable definitions and variable calls. For definitions, it stores the 
- * evaluated value of the initializer sub-tree (for definitions, i.e 'var x = 10'). For calls,
- * it stores an identifier of variable with no initializer, whos value will be * found later.
+/**
+ * Represents a variable in the program. This node can be used for both variable declarations
+ * and variable references, depending on the context provided by 'is_definition'.
  */
 struct VariableNode : Node {
   Token identifier;
-  Node *initializer;
+  Node* initializer;
   bool is_definition;
 
-  std::string to_string() const override { return is_definition ? "var" : identifier.value; }
-  VariableNode(Token identifier, Node *initializer, bool is_definition)
-      : identifier(identifier), initializer(initializer),
-        is_definition(is_definition) {}
+  VariableNode(Token identifier, Node* initializer, bool is_definition)
+      : identifier(std::move(identifier)), initializer(initializer), is_definition(is_definition) {}
   ~VariableNode() { delete initializer; }
+
+  std::string to_string() const override { return identifier.value; }
 };
 
-/*
- * Similar to the variable node, this also has two functionalities for function definitions and function calls.
- * This is achieved storing the identifier of the function and either storing empty VariableNodes with just the
- * identifier for function parameters on defition, or a root of an expression node for function call parameters.
+/**
+ * Represents a function in the program. This can be a function definition or a function call,
+ * determined by 'is_definition'. Parameters are represented as nodes which can be either variable declarations
+ * or expressions depending on whether it's a definition or a call.
  */
 struct FunctionNode : Node {
   Token identifier;
-  std::vector<Node *> parameters;
-  BlockNode *body;
+  std::vector<Node*> parameters;
+  BlockNode* body;
   bool is_definition;
 
-  std::string to_string() const override { 
-    std::string ret;
-    ret += is_definition ? "function " : "";
-    ret += identifier.value + "(";
-    for (size_t i = 0; i < parameters.size() && !is_definition; i++) {
-      Node *p = parameters[i];
-      ret += p->to_string();
-      if (i + 1 < parameters.size())
-        ret += ", ";
-    }
-    ret += ")";
-    return ret;
-  }
-  FunctionNode(Token identifier, std::vector<Node *> parameters, BlockNode *body, bool is_definition)
-      : identifier(identifier), parameters(parameters), body(body), is_definition(is_definition) {}
-  ~FunctionNode() { 
-    for (Node *n : parameters) {
+  FunctionNode(Token identifier, std::vector<Node*> parameters, BlockNode* body, bool is_definition)
+      : identifier(std::move(identifier)), parameters(std::move(parameters)), body(body), is_definition(is_definition) {}
+  ~FunctionNode() {
+    for (Node* n : parameters) {
       delete n;
     }
-    delete body; 
+    delete body;
+  }
+
+  std::string to_string() const override {
+    return (is_definition ? "function " : "call ") + identifier.value;
   }
 };
 
-/*
- * Leaf node that stores an operand (int, float, string, or bool).
+/**
+ * Represents a literal or a simple value in the program. 
+ * This is a terminal node in the AST that directly contains a value.
  */
 struct TerminalNode : Node {
-  Value *v;
+  Value* v;
+
+  TerminalNode(Value* v) : v(v) {}
+  ~TerminalNode() { delete v; }
 
   std::string to_string() const override { return v->to_string(); }
-  TerminalNode(Value *v) : v(v) {}
-  ~TerminalNode() {}
 };
 
-/*
- * Unary operator, ('++', '--', '!', '-', 'return').
+/**
+ * Represents a unary operation, such as negation, increment, or logical not.
  */
 struct UnaryNode : Node {
   Token token;
-  Node *child;
+  Node* child;
 
-  std::string to_string() const override { return token.value; }
-  UnaryNode(Token token, Node *child) : token(token), child(child) {}
+  UnaryNode(Token token, Node* child) : token(std::move(token)), child(child) {}
   ~UnaryNode() { delete child; }
+
+  std::string to_string() const override { return token.value + " " + child->to_string(); }
 };
 
-/*
- * Binary operator, i.e ('+', '-', '&&', '>=', '=', '*=', etc).
+/**
+ * Represents a binary operation, such as addition, subtraction, or assignment.
  */
 struct BinaryNode : Node {
   Token token;
-  Node *left;
-  Node *right;
+  Node* left;
+  Node* right;
 
-  std::string to_string() const override { return token.value; }
-  BinaryNode(Token token, Node *left, Node *right)
-      : token(token), left(left), right(right) {}
+  BinaryNode(Token token, Node* left, Node* right)
+      : token(std::move(token)), left(left), right(right) {}
   ~BinaryNode() {
     delete left;
     delete right;
   }
+
+  std::string to_string() const override {
+    return "(" + left->to_string() + " " + token.value + " " + right->to_string() + ")";
+  }
 };
 
-/*
- * Represents an if node which stores the root of the condition expression. If the expression
- * is evaluated to be true, the true_body BlockNode will be visited. The false_body can either
- * be a BlockNode or another chained if statement for 'else if'.
+/**
+ * Represents an if-statement in the program, including 'if', 'else if', and 'else' branches.
  */
 struct IfNode : Node {
-  Node *condition;
-  Node *true_body;
-  Node *false_body; // Used to chain if statements
+  Node* condition;
+  Node* true_body;
+  Node* false_body;
 
-  std::string to_string() const override { return "if"; }
-  IfNode(Node *condition, Node *true_body, Node *false_body)
+  IfNode(Node* condition, Node* true_body, Node* false_body)
       : condition(condition), true_body(true_body), false_body(false_body) {}
   ~IfNode() {
     delete condition;
     delete true_body;
     delete false_body;
   }
+
+  std::string to_string() const override { return "if " + condition->to_string(); }
 };
 
-/*
- * Represents a while loop. If the condition is evaluated to be true, the body BlockNode will be visied.
+/**
+ * Represents a while-loop in the program.
  */
 struct WhileNode : Node {
-  Node *condition;
-  BlockNode *body;
+  Node* condition;
+  BlockNode* body;
 
-  std::string to_string() const override { return "while"; }
-  WhileNode(Node *condition, BlockNode *body) : condition(condition), body(body) {}
+  WhileNode(Node* condition, BlockNode* body)
+      : condition(condition), body(body) {}
   ~WhileNode() {
     delete condition;
     delete body;
   }
+
+  std::string to_string() const override { return "while " + condition->to_string(); }
 };
 
-/*
- * Represents a for loop. Performs the initialization statement, evaluates the
- * condition, if true, it visits the body BlockNode and then updates.
+/**
+ * Represents a for-loop in the program. Consists of initialization, condition check, update, and body.
  */
 struct ForNode : Node {
-  Node *initialization;
-  Node *condition;
-  Node *update;
-  BlockNode *body;
+  Node* initialization;
+  Node* condition;
+  Node* update;
+  BlockNode* body;
 
-  std::string to_string() const override { return "for"; }
-  ForNode(Node *initialization, Node *condition, Node *update, BlockNode *body)
-      : initialization(initialization), condition(condition), update(update),
-        body(body) {}
+  ForNode(Node* initialization, Node* condition, Node* update, BlockNode* body)
+      : initialization(initialization), condition(condition), update(update), body(body) {}
   ~ForNode() {
     delete initialization;
     delete condition;
     delete update;
     delete body;
   }
+
+  std::string to_string() const override { return "for"; }
 };
 
 #endif // AST_H

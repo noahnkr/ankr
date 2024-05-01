@@ -1,6 +1,5 @@
 #include "../include/interpreter.h"
 #include <iostream>
-#include <random>
 #include <sstream>
 #include <stdexcept>
 
@@ -344,7 +343,6 @@ void Interpreter::visit(Node *node) {
       throw std::runtime_error("If condition must be a boolean expression");
     }
   } else if (auto *wn = dynamic_cast<WhileNode *>(node)) {
-    BoolValue condition = dynamic_cast<BoolValue *>(evaluate(wn->condition));
     while (true) {
       BoolValue *condition = dynamic_cast<BoolValue *>(evaluate(wn->condition));
       if (!condition || !condition->value) {
