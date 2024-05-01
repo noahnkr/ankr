@@ -9,7 +9,7 @@ class Parser {
 private:
   std::vector<Token> tokens;
 
-  int pos;
+  size_t pos;
 
   bool debug_mode;
 

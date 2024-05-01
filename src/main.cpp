@@ -1,6 +1,7 @@
 #include "../include/interpreter.h"
 #include <fstream>
 #include <iostream>
+#include <cstring>
 #include <string>
 
 int main(int argc, char *argv[]) {

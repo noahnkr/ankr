@@ -1,5 +1,5 @@
-var guesses = 5;
-var guess_num =  26;
+var guesses = 10;
+var guess_num =  rand(100);
 var guess = 0;
 
 while (guess != guess_num && guesses > 0) {

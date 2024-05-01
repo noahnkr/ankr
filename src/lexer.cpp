@@ -1,6 +1,5 @@
 #include "../include/lexer.h"
 #include <cctype>
-#include <iostream>
 #include <stdexcept>
 #include <string>
 #include <vector>

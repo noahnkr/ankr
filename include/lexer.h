@@ -1,8 +1,6 @@
 #ifndef LEXER_H
 #define LEXER_H
 
-#define EOF '\0' // End of File
-
 #include "token.h"
 #include <string>
 #include <vector>

@@ -410,4 +410,4 @@ void Parser::draw_tree_rec(Node *node, std::string *tree, std::string padding,
   }
 }
 
-bool Parser::at_end() { return pos >= static_cast<int>(tokens.size()); }
+bool Parser::at_end() { return pos >= tokens.size(); }
