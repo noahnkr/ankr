@@ -1,0 +1,21 @@
+output("Enter first number");
+var a = input();
+
+output("Enter second number");
+var b = input();
+
+output("Enter operator (+, -, *, /)");
+var op = input();
+
+if (op == "+") {
+ output("Result: " + (a + b));
+} else if (op == "-") {
+ output("Result: " + (a - b));
+} else if (op == "*") {
+ output("Result: " + (a * b));
+} else if (op == "/") {
+ output("Result: " + (a / b));
+} else {
+ output("Unknown operator");
+}
+

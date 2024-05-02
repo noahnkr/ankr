@@ -14,15 +14,15 @@ $(BIN): $(OBJS)
 	@$(ECHO) Linking $@
 	@$(CXX) $^ -o $@ $(LDFLAGS)
 
-
 build/%.o: src/%.cpp
-	@if not exist build mkdir build
+	@mkdir -p build
 	@$(CXX) $(CXXFLAGS) -MMD -MF build/$*.d -c $< -o $@
 
 -include $(OBJS:.o=.d)
 
 clean:
-	if exist build rd /s /q build
-	if exist $(BIN).exe del $(BIN).exe
+	rm -rf build
+	rm -f $(BIN)
 
 .PHONY: all clean
+

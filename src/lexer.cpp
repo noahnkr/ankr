@@ -65,11 +65,11 @@ std::vector<Token> Lexer::tokenize() {
       tokens.push_back(consume_string());
 
       // Comment
-    } else if (current_char == '/') {
+    } else if (current_char == '/' && peek() == '/') {
       while (current_char != '\n') {
         advance();
       }
-      advance();
+      advance(); // Skip newline symbol
 
       // Operators
     } else if (current_char == '>' || current_char == '<' ||
