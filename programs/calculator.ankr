@@ -14,7 +14,11 @@ if (op == "+") {
 } else if (op == "*") {
  output("Result: " + (a * b));
 } else if (op == "/") {
- output("Result: " + (a / b));
+ if (b == 0) {
+   output("Cannot divide by zero");
+ } else {
+  output("Result: " + (a / b));
+ }
 } else {
  output("Unknown operator");
 }

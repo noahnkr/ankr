@@ -1,0 +1,37 @@
+var balance = 0;
+
+function deposit(amount) {
+ balance += amount;
+ output("Deposited " + amount + " into balance. New balance: " + balance);
+}
+
+function widthraw(amount) {
+ if (amount > balance) {
+  output("Insufficient balance");
+ } else {
+   balance -= amount;
+   output("Withdrew " + amount + " from balance. New balance: " + balance);
+ }
+}
+
+var action =  "";
+while (action != "exit") {
+  output("Welcome to the bank. What would you like to do? (deposit, withdraw, exit)");
+  action = input();
+  if (action == "deposit") {
+    output("Enter amount to deposit:");
+    var deposit_amount = input();
+    deposit(deposit_amount);
+  } else if (action == "withdraw") {
+    output("Enter amount to withdraw:");
+    var withdraw_amount = input();
+    withdraw(withdraw_amount);
+  } else if (action == "exit") {
+    // do nothing
+  } else {
+    output("Unknown action.");
+  }
+}
+
+ 
+ 

@@ -376,11 +376,13 @@ void Interpreter::visit(Node *node) {
   } else if (auto *in = dynamic_cast<IfNode *>(node)) {
     Value *condition_value = evaluate(in->condition);
     if (auto *bool_condition = dynamic_cast<BoolValue *>(condition_value)) {
+      scope_increase();
       if (bool_condition->value) {
         visit(in->true_body);
       } else {
         visit(in->false_body);
       }
+      scope_decrease();
     } else {
       throw std::runtime_error("If condition must be a boolean expression");
     }
