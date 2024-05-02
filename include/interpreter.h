@@ -20,9 +20,25 @@ private:
   size_t scope_index; ///< Current index in the scope stack.
 
   /**
+   * Increases the scope level.
+   */
+  void scope_increase();
+
+  /**
+   * Decreases the scope level and pops the top scope.
+   */
+  void scope_decrease();
+
+  /**
    * Prints the current state of all scopes, useful for debugging.
    */
   void print_scope();
+
+  /**
+   * Retrieves the function defintion matching the identifier
+   * @param identifier The name of the function
+   */
+  FunctionNode *get_function_from_scope(std::string identifier);
 
   /**
    * Retrieves the value of a variable from the current scope.

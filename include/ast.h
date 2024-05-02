@@ -28,7 +28,7 @@ struct BlockNode : Node {
     }
   }
 
-  std::string to_string() const override { return "Block"; }
+  std::string to_string() const override { return "[]"; }
 };
 
 /**
@@ -44,7 +44,8 @@ struct VariableNode : Node {
       : identifier(std::move(identifier)), initializer(initializer), is_definition(is_definition) {}
   ~VariableNode() { delete initializer; }
 
-  std::string to_string() const override { return identifier.value; }
+  std::string to_string() const override { 
+    return is_definition ? "var" : identifier.value; }
 };
 
 /**
@@ -68,7 +69,22 @@ struct FunctionNode : Node {
   }
 
   std::string to_string() const override {
-    return (is_definition ? "function " : "call ") + identifier.value;
+    if (!is_definition) {
+      return identifier.value + "()";
+    }
+
+    std::string ret;
+    ret += "function " + identifier.value + "(";
+    for (size_t i = 0; i < parameters.size(); i++) {
+      VariableNode *param = dynamic_cast<VariableNode *>(parameters[i]);
+      ret += param->identifier.value;
+      if (i + 1 < parameters.size()) {
+        ret += ", ";
+      }
+    }
+    ret += ")";
+
+    return ret;
   }
 };
 
@@ -95,7 +111,7 @@ struct UnaryNode : Node {
   UnaryNode(Token token, Node* child) : token(std::move(token)), child(child) {}
   ~UnaryNode() { delete child; }
 
-  std::string to_string() const override { return token.value + " " + child->to_string(); }
+  std::string to_string() const override { return token.value; }
 };
 
 /**
@@ -114,7 +130,7 @@ struct BinaryNode : Node {
   }
 
   std::string to_string() const override {
-    return "(" + left->to_string() + " " + token.value + " " + right->to_string() + ")";
+    return token.value;
   }
 };
 
@@ -134,7 +150,7 @@ struct IfNode : Node {
     delete false_body;
   }
 
-  std::string to_string() const override { return "if " + condition->to_string(); }
+  std::string to_string() const override { return "if"; } 
 };
 
 /**
@@ -151,7 +167,7 @@ struct WhileNode : Node {
     delete body;
   }
 
-  std::string to_string() const override { return "while " + condition->to_string(); }
+  std::string to_string() const override { return "while"; }
 };
 
 /**

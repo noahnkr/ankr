@@ -1,5 +1,6 @@
-var i = 0;
-while (i < 10) {
-  output(i);
-  i++;
-} 
+function add(x, y) {
+  return x + y;
+}
+
+// Test
+output(add(1,5));

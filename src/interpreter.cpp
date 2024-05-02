@@ -4,12 +4,13 @@
 #include <stdexcept>
 
 // TODO:
-//  - Verify functionality of functions, for loops, and scope management.
-//  - Handle comments.
-//  - Better error handling with line numbers.
-//
+//  - Break statement
+//  - Handle comments
+//  - Better error handling with line numbers
+
 Interpreter::Interpreter(std::string code, bool debug_mode)
     : ast(), debug_mode(debug_mode), scope(), scope_index() {
+
   scope.push_back(std::vector<Node *>()); // Global Scope
   Lexer lexer(code);
 
@@ -20,47 +21,72 @@ Interpreter::Interpreter(std::string code, bool debug_mode)
   std::vector<Token> tokens = lexer.tokenize();
 
   if (debug_mode) {
-    std::cout << "Created." << std::endl;
     std::cout << "Tokens: ";
     for (Token t : tokens) {
       std::cout << t.value << " ";
     }
     std::cout << std::endl;
-    std::cout << "Parsing...";
   }
 
   Parser parser(tokens, debug_mode);
   ast = parser.parse();
 
   if (debug_mode) {
-    std::cout << "Parsed." << std::endl << "AST:" << std::endl;
-    Parser::draw_tree(ast);
+    std::cout << "AST:" << std::endl << Parser::draw_tree(ast) << std::endl;
   }
 };
 
 Interpreter::~Interpreter() {
   delete ast;
-}; // TODO: Traverse tree and delete each node
+};
+
+void Interpreter::scope_increase() {
+  scope.push_back(std::vector<Node *>());
+  scope_index++;
+}
+
+void Interpreter::scope_decrease() {
+  scope.pop_back();
+  scope_index--;
+}
 
 void Interpreter::print_scope() {
   int level = 0;
   for (std::vector<Node *> s : scope) {
-    std::cout << "Scope Level " << level << ": ";
+    std::cout << "Level " << level << ": ";
     if (s.size() == 0) {
       std::cout << "Empty";
     }
-    for (Node *n : s) {
-      std::cout << n->to_string() << " ";
+    for (size_t i = 0; i < s.size(); i++) {
+      Node *n = s[i];
+      std::cout << "{ " << n->to_string();
       if (auto *variable = dynamic_cast<VariableNode *>(n)) {
-        std::cout
-            << ", Value: "
-            << dynamic_cast<TerminalNode *>(variable->initializer)->to_string()
-            << " ";
+        std::cout << ": " << dynamic_cast<TerminalNode *>(variable->initializer)->to_string();
+      }
+
+      std::cout << " }";
+
+      if (i + 1 < s.size()) {
+        std::cout << ", ";
       }
     }
     level++;
     std::cout << std::endl;
   }
+}
+
+FunctionNode *Interpreter::get_function_from_scope(std::string identifier) {
+  // Iterate from the current scope back to the global scope
+  for (size_t i = scope_index; i >= 0; i--) {
+    for (Node *n : scope[i]) {
+      if (auto *func_node = dynamic_cast<FunctionNode *>(n)) {
+        if (func_node->identifier.value == identifier) {
+          return func_node;
+        }
+      }
+    }
+  }
+  return nullptr; // Return nullptr if the function is not found in any scope
 }
 
 Value *Interpreter::get_variable_value(std::string identifier) {
@@ -104,6 +130,7 @@ void Interpreter::set_variable_value(std::string identifier, Value *new_value) {
 
 Value *Interpreter::evaluate_function(std::string identifier,
                                       std::vector<Value *> parameters) {
+  // TODO: Modulize to include libraries with standard functions
   if (identifier == "input") {
     if (parameters.size() != 0) {
       std::ostringstream msg;
@@ -170,17 +197,7 @@ Value *Interpreter::evaluate_function(std::string identifier,
     }
   }
 
-  FunctionNode *func;
-  for (size_t i = scope_index; i >= 0; i--) {
-    for (Node *n : scope[i]) {
-      if (auto *fnn = dynamic_cast<FunctionNode *>(n)) {
-        if (fnn->identifier.value == identifier) {
-          func = fnn;
-          break;
-        }
-      }
-    }
-  }
+  FunctionNode *func = get_function_from_scope(identifier);
 
   // Runtime error thrown if the function is not defined
   if (!func) {
@@ -202,8 +219,12 @@ Value *Interpreter::evaluate_function(std::string identifier,
     throw std::runtime_error(msg.str());
   }
 
-  scope.push_back(std::vector<Node *>());
-  scope_index++;
+  // Create a new scope for the function call.
+  scope_increase();
+
+  if (debug_mode) {
+    std::cout << "Defining parameters..." << std::endl;
+  }
 
   // Define temporary parameter variables in new scope
   for (size_t i = 0; i < parameters.size(); i++) {
@@ -219,23 +240,14 @@ Value *Interpreter::evaluate_function(std::string identifier,
     }
   }
 
-  Value *ret = new VoidValue();
-  for (Node *s : func->body->statements) {
-    if (auto *is_return = dynamic_cast<UnaryNode *>(s)) {
-      if (is_return->token.type == RETURN) {
-        ret = evaluate(s);
-        break;
-      } else {
-        visit(s);
-      }
-    } else {
-      visit(s);
-    }
+  if (debug_mode) {
+    std::cout << "Scope:" << std::endl;
+    print_scope();
   }
 
-  scope.pop_back();
-  scope_index--;
+  Value *ret = evaluate(func->body);
 
+  scope_decrease();
   return ret;
 }
 
@@ -247,10 +259,30 @@ Value *Interpreter::evaluate(Node *node) {
 
   if (debug_mode) {
     std::cout << "Evaluating: " << node->to_string() << std::endl;
-    print_scope();
   }
 
-  if (auto *vn = dynamic_cast<VariableNode *>(node)) {
+  // Function Body
+  if (auto *bn = dynamic_cast<BlockNode *>(node)) {
+    Value *ret = new VoidValue();
+    for (Node *s : bn->statements) {
+      if (auto *is_return = dynamic_cast<UnaryNode *>(s)) {
+        if (is_return->token.type == RETURN) {
+          ret = evaluate(is_return);
+          break;
+        } else {
+          visit(s);
+        }
+      } else {
+        visit(s);
+      }
+    }
+    return ret;
+
+  } else if (auto *vn = dynamic_cast<VariableNode *>(node)) {
+    if (debug_mode) {
+      std::cout << "Scope: " << std::endl;
+      print_scope();
+    }
     return get_variable_value(vn->identifier.value);
 
   } else if (auto *tn = dynamic_cast<TerminalNode *>(node)) {
@@ -268,6 +300,10 @@ Value *Interpreter::evaluate(Node *node) {
     return left->apply_operator(bnn->token, right);
 
   } else if (auto *fnn = dynamic_cast<FunctionNode *>(node)) {
+    if (debug_mode) {
+      std::cout << "Scope: " << std::endl;
+      print_scope();
+    }
     std::vector<Value *> parameters;
     for (Node *p : fnn->parameters) {
       parameters.push_back(evaluate(p));
@@ -287,7 +323,6 @@ void Interpreter::visit(Node *node) {
 
   if (debug_mode) {
     std::cout << "Visiting: " << node->to_string() << std::endl;
-    print_scope();
   }
 
   if (auto *bn = dynamic_cast<BlockNode *>(node)) {
@@ -314,15 +349,17 @@ void Interpreter::visit(Node *node) {
     }
 
   } else if (auto *un = dynamic_cast<UnaryNode *>(node)) {
-    if (un->token.type == RETURN && scope_index == 0) {
-      throw std::runtime_error("Return is not allowed here");
+    if (un->token.type == RETURN) {
+      if (scope_index == 0) {
+        throw std::runtime_error("Return is not allowed here.");
+      }
+      return;
     }
 
     if (auto *variable = dynamic_cast<VariableNode *>(un->child)) {
       Value *stored_value = evaluate(un);
       set_variable_value(variable->identifier.value, stored_value);
     } else {
-      throw std::runtime_error("Expression is not assignable");
     }
 
   } else if (auto *bnn = dynamic_cast<BinaryNode *>(node)) {
@@ -348,6 +385,7 @@ void Interpreter::visit(Node *node) {
       throw std::runtime_error("If condition must be a boolean expression");
     }
   } else if (auto *wn = dynamic_cast<WhileNode *>(node)) {
+    scope_increase();
     while (true) {
       BoolValue *condition = dynamic_cast<BoolValue *>(evaluate(wn->condition));
       if (!condition || !condition->value) {
@@ -355,13 +393,19 @@ void Interpreter::visit(Node *node) {
       }
       visit(wn->body);
     }
-
+    scope_decrease();
   } else if (auto *fn = dynamic_cast<ForNode *>(node)) {
+    scope_increase();
     visit(fn->initialization);
-    while (dynamic_cast<BoolValue *>(evaluate(fn->condition))->value) {
+    while (true) {
+      BoolValue *condition = dynamic_cast<BoolValue *>(evaluate(fn->condition));
+      if (!condition || !condition->value) {
+        break;
+      }
       visit(fn->body);
       visit(fn->update);
     }
+    scope_decrease();
   } else if (auto *fnn = dynamic_cast<FunctionNode *>(node)) {
     if (fnn->is_definition) {
       scope[scope_index].push_back(fnn);

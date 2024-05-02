@@ -251,10 +251,6 @@ FunctionNode *Parser::parse_function(bool is_definition) {
 
   while (peek().type != RIGHT_PARENTHESIS) {
     Node *parameter = parse_expression();
-    // Make sure function parameter is just an empty variable on definition
-    if (is_definition && static_cast<VariableNode *>(parameter))
-      throw std::runtime_error("Invalid function parameter");
-
     parameters.push_back(parameter);
   }
   consume(RIGHT_PARENTHESIS, "Expected ')' after parameters");

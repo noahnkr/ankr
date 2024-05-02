@@ -1,19 +1,16 @@
 function fibonacci(n) {
-  if (n <= 0) {
-    return 0;
-  } else if (n == 1) {
-    return 1;
-  }
-
-  var a = 0, b = 1, sum = 0;
+  var a = 0;
+  var b = 1;
+  var f = 1;
   for (var i = 2; i <= n; i++) {
-    sum = a + b;
+    f = a + b;
     a = b;
-    b = sum;
+    b = f;
   }
-  return b;
+  return f;
 }
 
-for (var i = 0; i < 10; i++) {
-  output(fibonacci(i));
+// Calculate and print first 10 fibonacci numbers
+for (var i = 1; i < 10; i++) {
+  output("Fibonacci " + i + ": " + fibonacci(i));
 }

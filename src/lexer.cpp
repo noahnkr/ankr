@@ -51,9 +51,7 @@ Token Lexer::consume_string() {
 std::vector<Token> Lexer::tokenize() {
   std::vector<Token> tokens;
   while (current_char != EOF) {
-    if (current_char != ' ' && current_char != '\n') {
-      //std::cout << "Current Char: " << current_char << ", ";
-    }
+
     // Space
     if (std::isspace(current_char)) {
       consume_whitespace();
@@ -65,6 +63,13 @@ std::vector<Token> Lexer::tokenize() {
       // String
     } else if (current_char == '\"') {
       tokens.push_back(consume_string());
+
+      // Comment
+    } else if (current_char == '/') {
+      while (current_char != '\n') {
+        advance();
+      }
+      advance();
 
       // Operators
     } else if (current_char == '>' || current_char == '<' ||
@@ -95,13 +100,12 @@ std::vector<Token> Lexer::tokenize() {
       do {
         value += current_char;
         advance();
-      }
-      while (token_map.find(value) == token_map.end() && 
-              !(std::isspace(current_char) || current_char == ';' ||
-              current_char == '(' || current_char == ')' ||
-              current_char == ',' || current_char == '+' ||
-              current_char == '-'));
-      
+      } while (token_map.find(value) == token_map.end() &&
+               !(std::isspace(current_char) || current_char == ';' ||
+                 current_char == '(' || current_char == ')' ||
+                 current_char == ',' || current_char == '+' ||
+                 current_char == '-'));
+
       // Keyword
       if (token_map.find(value) != token_map.end()) {
         tokens.push_back(token_map.at(value));

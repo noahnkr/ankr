@@ -11,7 +11,6 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-
   // Enable debug mode from command line
   bool debug_mode = false;
   for (int i = 1; i < argc; i++) {
@@ -29,7 +28,6 @@ int main(int argc, char *argv[]) {
 
   // Convert file into string of text
   std::string code((std::istreambuf_iterator<char>(file)), std::istreambuf_iterator<char>()); 
-
   Interpreter interpreter(code, debug_mode);
   interpreter.execute();
 
