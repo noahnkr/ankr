@@ -2,7 +2,7 @@
 
 ## Overview
 
-Ankr is a custom programming language interpreter designed to execute programs written in the Ankr language. The interpreter processes Ankr source code through a sequence of steps to tokenize, parse, and execute the code. Below is a breakdown of the interpreter's workflow:
+Ankr is a toy language interpreter written in C++ designed to execute programs written in the Ankr language. The interpreter processes Ankr source code through a sequence of steps to tokenize, parse, and execute the code. Below is a breakdown of the interpreter's workflow:
 
 ## Workflow
 
